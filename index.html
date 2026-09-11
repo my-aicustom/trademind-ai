@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRADEMIND — Institutional Trading Terminal & Market Microstructure</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <meta property="og:title" content="TRADEMIND — Institutional Financial Intelligence Terminal">
+  <meta property="og:description" content="Autonomous Market Microstructure, Bandarmologi & Behavioral Trading Journal">
+  <meta property="og:image" content="og-image.jpg">
+  <meta property="og:type" content="website">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            void: '#06080D',
+            panel: '#0C0F17',
+            panelBorder: 'rgba(255, 255, 255, 0.08)',
+            panelHeader: '#111622',
+            tradeGreen: '#10B981',
+            tradeRed: '#F43F5E',
+            tradeGold: '#F59E0B',
+            tradeBlue: '#38BDF8',
+            muted: '#8B949E'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- TradingView Lightweight Charts (Used by Binance & Real Exchanges) -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+  <style>
+    body {
+      background-color: #06080D;
+      color: #EDEDED;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #06080D; }
+    ::-webkit-scrollbar-thumb { background: #1C2230; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2D3748; }
+
+    .nav-btn-active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFFFFF;
+      border-left: 2px solid #10B981;
+    }
+    .badge-subtle {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-full antialiased selection:bg-white/20 select-none">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP TICKER & INSTRUMENT BAR (TRADING TERMINAL HEADER)                 -->
+  <!-- ========================================================================= -->
+  <header class="h-12 border-b border-panelBorder bg-[#080B11] flex items-center justify-between px-3 sm:px-4 z-30 flex-shrink-0 text-xs">
+    
+    <!-- LEFT: LOGO & TICKER SELECTOR -->
+    <div class="flex items-center space-x-3">
+      <!-- Monogram -->
+      <div class="flex items-center space-x-2 pr-3 border-r border-panelBorder">
+        <div class="w-7 h-7 rounded bg-[#101522] border border-white/15 p-0.5 flex items-center justify-center">
+          <img src="favicon.svg" alt="TRADEMIND" class="w-full h-full">
+        </div>
+        <span class="font-extrabold tracking-wider text-white font-sans hidden sm:inline-block">TRADEMIND</span>
+      </div>
+
+      <!-- INSTRUMENT SWITCHER (DROPDOWN WITH LIVE PRICE) -->
+      <div class="flex items-center space-x-2">
+        <select id="mainTickerSelect" onchange="onSelectInstrument(this.value)" class="bg-[#111622] border border-white/15 text-white font-mono font-bold text-xs rounded px-2.5 py-1 focus:outline-none focus:border-white/30 cursor-pointer">
+          <optgroup label="🇮🇩 Saham BEI (IDX)">
+            <option value="BBRI" selected>BBRI — Bank Rakyat Indonesia</option>
+            <option value="BBCA">BBCA — Bank Central Asia</option>
+            <option value="BREN">BREN — Barito Renewables Energy</option>
+            <option value="ANTM">ANTM — Aneka Tambang Tbk</option>
+          </optgroup>
+          <optgroup label="🌍 Global Forex & Commodities">
+            <option value="XAUUSD">XAU/USD — Spot Gold ($)</option>
+            <option value="EURUSD">EUR/USD — Euro / US Dollar</option>
+            <option value="GBPJPY">GBP/JPY — British Pound / Yen</option>
+          </optgroup>
+        </select>
+
+        <!-- LIVE PRICE TICKER -->
+        <div class="flex items-baseline space-x-2 font-mono">
+          <span id="topLivePrice" class="text-base font-extrabold text-white">3,840.00</span>
+          <span id="topLiveChange" class="text-[11px] font-bold text-tradeGreen">+35.00 (+0.92%)</span>
+        </div>
+      </div>
+
+      <!-- TIMEFRAME SELECTOR (CHART BARS) -->
+      <div class="hidden md:flex items-center space-x-1 pl-3 border-l border-panelBorder text-[11px] font-mono">
+        <button onclick="setTimeframe('1m')" class="tf-btn px-2 py-0.5 rounded text-muted hover:text-white">1m</button>
+        <button onclick="setTimeframe('5m')" class="tf-btn px-2 py-0.5 rounded text-muted hover:text-white">5m</button>
+        <button onclick="setTimeframe('15m')" class="tf-btn px-2 py-0.5 rounded text-white bg-white/10 font-bold">15m</button>
+        <button onclick="setTimeframe('1h')" class="tf-btn px-2 py-0.5 rounded text-muted hover:text-white">1h</button>
+        <button onclick="setTimeframe('4h')" class="tf-btn px-2 py-0.5 rounded text-muted hover:text-white">4h</button>
+        <button onclick="setTimeframe('D')" class="tf-btn px-2 py-0.5 rounded text-muted hover:text-white">D</button>
+      </div>
+
+      <!-- ACTIVE INDICATORS PILLS -->
+      <div class="hidden xl:flex items-center space-x-1.5 pl-3 border-l border-panelBorder text-[10px] font-mono">
+        <span class="px-1.5 py-0.5 rounded bg-blue-950/60 border border-blue-800/40 text-blue-300">EMA 20</span>
+        <span class="px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-800/40 text-purple-300">EMA 50</span>
+        <span id="bandarIndicatorPill" class="px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300">VWAP BANDAR (3.820)</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: ACCOUNT BALANCE, LATENCY & SPECS DRAWER TRIGGER -->
+    <div class="flex items-center space-x-3 text-[11px] font-mono">
+      <div class="hidden lg:flex items-center space-x-3 text-muted">
+        <span>FEED: <strong class="text-white">T+0 DIRECT</strong></span>
+        <span>LATENCY: <strong class="text-tradeGreen">14ms</strong></span>
+      </div>
+
+      <!-- SIMULATED TRADER BALANCE -->
+      <div class="bg-[#111622] border border-white/15 px-2.5 py-1 rounded flex items-center space-x-2">
+        <span class="text-muted text-[10px] uppercase">EQUITY:</span>
+        <span id="userEquityDisplay" class="font-bold text-white">Rp 25.000.000</span>
+      </div>
+
+      <!-- MARKET STATUS BADGE -->
+      <div class="px-2.5 py-1 rounded bg-tradeGreen/10 border border-tradeGreen/30 flex items-center space-x-1.5 text-[11px] text-tradeGreen">
+        <span class="w-1.5 h-1.5 rounded-full bg-tradeGreen animate-pulse"></span>
+        <span class="font-bold">MARKET: SESI II OPEN</span>
+      </div>
+    </div>
+
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. MAIN WORKSPACE: SIDEBAR + CENTER CHART + RIGHT ORDER TICKET            -->
+  <!-- ========================================================================= -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT RAIL NAVIGATION (ICON BAR) -->
+    <aside class="w-12 border-r border-panelBorder bg-[#080B11] flex flex-col items-center py-3 space-y-4 flex-shrink-0 z-20">
+      <button onclick="switchView('terminal')" id="railBtnTerminal" title="Chart & Order Execution" class="w-9 h-9 rounded flex items-center justify-center text-white nav-btn-active transition">
+        <i data-lucide="candlestick-chart" class="w-4 h-4"></i>
+      </button>
+      <button onclick="switchView('radar')" id="railBtnRadar" title="Radar Bandarmologi & Sinyal" class="w-9 h-9 rounded flex items-center justify-center text-muted hover:text-white transition">
+        <i data-lucide="radar" class="w-4 h-4"></i>
+      </button>
+      <button onclick="switchView('journal')" id="railBtnJournal" title="Smart Trading Journal" class="w-9 h-9 rounded flex items-center justify-center text-muted hover:text-white transition">
+        <i data-lucide="book-marked" class="w-4 h-4"></i>
+      </button>
+      <button onclick="switchView('academy')" id="railBtnAcademy" title="Akademi & CMS Materi" class="w-9 h-9 rounded flex items-center justify-center text-muted hover:text-white transition">
+        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex-1"></div>
+
+      <button onclick="showToast('ENGINE AKTIF: Trademind Financial Kernel v4.2.0 • Latency 14ms', 'info')" title="Status Sistem" class="w-9 h-9 rounded flex items-center justify-center text-muted hover:text-white transition">
+        <i data-lucide="cpu" class="w-4 h-4"></i>
+      </button>
+    </aside>
+
+    <!-- CENTER & BOTTOM: CHART WORKSPACE + DOCKABLE PORTFOLIO DRAWER -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-void relative">
+
+      <!-- VIEW 1: TERMINAL (CHART & BOTTOM DOCK) -->
+      <div id="viewTerminal" class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- INTERACTIVE CANDLESTICK CHART CONTAINER (LIGHTWEIGHT CHARTS) -->
+        <div class="flex-1 relative overflow-hidden">
+          <div id="tradingChartContainer" class="w-full h-full"></div>
+
+          <!-- CHART OVERLAY SIGNAL BADGE -->
+          <div class="absolute top-3 left-3 bg-[#0D111A]/90 border border-white/15 rounded-lg p-2.5 backdrop-blur font-mono text-xs z-10 shadow-lg pointer-events-none">
+            <div class="flex items-center space-x-2">
+              <span id="chartSignalBadge" class="px-2 py-0.5 rounded text-[10px] font-bold border border-tradeGreen/40 text-tradeGreen bg-tradeGreen/10">
+                ▲ AI BUY SIGNAL ACTIVE
+              </span>
+              <span id="chartSignalTicker" class="text-white font-bold">BBRI</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-2 text-[10px] text-muted">
+              <div>ENTRY: <strong id="chartEntryVal" class="text-white">3.840</strong></div>
+              <div>SL: <strong id="chartSlVal" class="text-tradeRed">3.710</strong></div>
+              <div>TP: <strong id="chartTpVal" class="text-tradeGreen">4.150</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOCKABLE BOTTOM DRAWER (ACTIVE POSITIONS, JOURNAL, ORDER FLOW) -->
+        <div class="h-44 border-t border-panelBorder bg-[#080B11] flex flex-col flex-shrink-0">
+          
+          <!-- DOCK TABS -->
+          <div class="h-8 border-b border-panelBorder flex items-center justify-between px-3 text-[11px] font-mono bg-[#0D111A]">
+            <div class="flex items-center space-x-4">
+              <button onclick="switchDockTab('positions')" id="dockTabPositions" class="text-white font-bold border-b border-white pb-1">
+                Posisi Aktif (<span id="openPositionsCount">1</span>)
+              </button>
+              <button onclick="switchDockTab('journal')" id="dockTabJournal" class="text-muted hover:text-white pb-1">
+                Riwayat Jurnal Transaksi (<span id="journalCount">5</span>)
+              </button>
+              <button onclick="switchDockTab('tape')" id="dockTabTape" class="text-muted hover:text-white pb-1">
+                Broker Accumulation Tape
+              </button>
+            </div>
+            <span class="text-muted text-[10px]">Real-Time Execution Engine</span>
+          </div>
+
+          <!-- DOCK CONTENT 1: OPEN POSITIONS TABLE -->
+          <div id="dockContentPositions" class="flex-1 overflow-auto p-2">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-[10px] text-muted uppercase border-b border-white/[0.04]">
+                <tr>
+                  <th class="py-1 px-2">Ticker</th>
+                  <th class="py-1 px-2">Sisi</th>
+                  <th class="py-1 px-2">Ukuran</th>
+                  <th class="py-1 px-2">Harga Entry</th>
+                  <th class="py-1 px-2">Harga Sekarang</th>
+                  <th class="py-1 px-2">Stop Loss</th>
+                  <th class="py-1 px-2">Target TP</th>
+                  <th class="py-1 px-2">Floating PnL</th>
+                  <th class="py-1 px-2 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="openPositionsTableBody" class="divide-y divide-white/[0.02] text-[11px]">
+                <!-- Populated via JS with live ticks -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DOCK CONTENT 2: JOURNAL TABLE -->
+          <div id="dockContentJournal" class="flex-1 overflow-auto p-2 hidden">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-[10px] text-muted uppercase border-b border-white/[0.04]">
+                <tr>
+                  <th class="py-1 px-2">Tanggal</th>
+                  <th class="py-1 px-2">Ticker</th>
+                  <th class="py-1 px-2">Posisi</th>
+                  <th class="py-1 px-2">Entry & Exit</th>
+                  <th class="py-1 px-2">Lot</th>
+                  <th class="py-1 px-2">Realized PnL</th>
+                  <th class="py-1 px-2">R:R</th>
+                  <th class="py-1 px-2">Disiplin Plan</th>
+                  <th class="py-1 px-2">Catatan AI</th>
+                </tr>
+              </thead>
+              <tbody id="terminalJournalTableBody" class="divide-y divide-white/[0.02] text-[11px]">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DOCK CONTENT 3: BROKER ACCUMULATION TAPE -->
+          <div id="dockContentTape" class="flex-1 overflow-auto p-2 hidden text-xs font-mono">
+            <div id="tapeStream" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <!-- Live broker stream ticks -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- VIEW 2: RADAR & BROKER SUMMARY SCREENER (OPTIONAL FULLSCREEN TAB) -->
+      <div id="viewRadar" class="flex-1 p-6 overflow-y-auto hidden space-y-6">
+        <div class="flex items-center justify-between border-b border-panelBorder pb-4">
+          <div>
+            <h2 class="text-base font-bold text-white font-mono">RADAR BANDARMOLOGI & SMC FOREX</h2>
+            <p class="text-xs text-muted">Pemetaan jejak akumulasi broker institusi (Top 3 BCR3) vs ritel secara menyeluruh.</p>
+          </div>
+          <button onclick="switchView('terminal')" class="px-3 py-1.5 rounded bg-white text-black font-mono font-bold text-xs">
+            &larr; Kembali ke Chart
+          </button>
+        </div>
+        <div id="fullRadarContainer" class="space-y-4">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+      <!-- VIEW 3: FULL JOURNAL & POST-MORTEM -->
+      <div id="viewJournal" class="flex-1 p-6 overflow-y-auto hidden space-y-6">
+        <div class="flex items-center justify-between border-b border-panelBorder pb-4">
+          <div>
+            <h2 class="text-base font-bold text-white font-mono">SMART TRADING JOURNAL & BEHAVIORAL ANALYTICS</h2>
+            <p class="text-xs text-muted">Statistik performa akun, rasio kemenangan (Win Rate), dan post-mortem psikologi.</p>
+          </div>
+          <button onclick="switchView('terminal')" class="px-3 py-1.5 rounded bg-white text-black font-mono font-bold text-xs">
+            &larr; Kembali ke Chart
+          </button>
+        </div>
+        <div id="fullJournalContainer" class="space-y-4">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+      <!-- VIEW 4: ACADEMY & CMS -->
+      <div id="viewAcademy" class="flex-1 p-6 overflow-y-auto hidden space-y-6">
+        <div class="flex items-center justify-between border-b border-panelBorder pb-4">
+          <div>
+            <h2 class="text-base font-bold text-white font-mono">KURIKULUM BELAJAR DARI NOL & CMS ADMIN</h2>
+            <p class="text-xs text-muted">Modul edukasi trading adaptif. Klien memiliki kendali penuh untuk menambah materi mandiri.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openCmsModal()" class="px-3 py-1.5 rounded bg-tradeGreen text-black font-mono font-bold text-xs">
+              + Edit / Tambah Materi (CMS)
+            </button>
+            <button onclick="switchView('terminal')" class="px-3 py-1.5 rounded bg-white/10 text-white font-mono font-bold text-xs">
+              Kembali ke Chart
+            </button>
+          </div>
+        </div>
+        <div id="fullAcademyContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: ORDER TICKET, COPILOT & BROKER SUMMARY (360px WIDTH) -->
+    <aside class="w-80 sm:w-96 border-l border-panelBorder bg-[#080B11] flex flex-col flex-shrink-0 overflow-y-auto z-20 text-xs">
+      
+      <!-- RIGHT PANEL TABS -->
+      <div class="h-9 border-b border-panelBorder flex items-center justify-around px-2 text-[11px] font-mono bg-[#0D111A]">
+        <button onclick="switchRightTab('order')" id="rightTabOrder" class="text-white font-bold border-b border-white pb-1 flex items-center space-x-1">
+          <i data-lucide="zap" class="w-3 h-3 text-tradeGreen"></i>
+          <span>Order Ticket</span>
+        </button>
+        <button onclick="switchRightTab('broker')" id="rightTabBroker" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
+          <i data-lucide="layers" class="w-3 h-3"></i>
+          <span>Broker Summary</span>
+        </button>
+        <button onclick="switchRightTab('copilot')" id="rightTabCopilot" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
+          <i data-lucide="bot" class="w-3 h-3"></i>
+          <span>AI Copilot</span>
+        </button>
+      </div>
+
+      <!-- RIGHT TAB 1: INTERACTIVE ORDER TICKET WITH FIXED 1-2% POSITION SIZING -->
+      <div id="rightContentOrder" class="p-4 space-y-4 font-mono">
+        
+        <!-- SIDE TOGGLE: BUY / SELL -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-[#111622] rounded border border-white/10">
+          <button id="sideBtnBuy" onclick="setOrderSide('BUY')" class="py-1.5 rounded text-white font-bold bg-tradeGreen/20 border border-tradeGreen/40 text-tradeGreen">
+            BUY (Long)
+          </button>
+          <button id="sideBtnSell" onclick="setOrderSide('SELL')" class="py-1.5 rounded text-muted font-bold hover:text-tradeRed">
+            SELL (Short)
+          </button>
+        </div>
+
+        <!-- RISK SLIDER (FIXED FRACTIONAL 1-2% GOLDEN RULE) -->
+        <div class="p-3 bg-[#0D111A] border border-white/[0.06] rounded space-y-2">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="text-muted">Toleransi Risiko:</span>
+            <span id="riskPctDisplay" class="text-tradeGreen font-bold">2.0% (Rp 500.000)</span>
+          </div>
+          <input type="range" id="orderRiskRange" min="0.5" max="5.0" step="0.5" value="2.0" oninput="onRiskSliderChange(this.value)" class="w-full accent-white cursor-pointer">
+          <div class="flex justify-between text-[9px] text-muted">
+            <span>0.5% (Safe)</span>
+            <span>2.0% (Golden Rule)</span>
+            <span>5.0% (Aggressive)</span>
+          </div>
+        </div>
+
+        <!-- INPUTS: ENTRY, SL, TP -->
+        <div class="space-y-2 text-[11px]">
+          <div>
+            <div class="flex justify-between text-muted mb-1">
+              <span>HARGA ENTRY</span>
+              <span id="labelMarketPrice" class="text-slate-400">Pasar: 3.840</span>
+            </div>
+            <input type="number" id="ticketEntry" value="3840" oninput="recalcOrderTicket()" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-white font-bold focus:outline-none">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-muted mb-1">
+              <span>STOP LOSS (ATR DINAMIS)</span>
+              <span id="slDistancePct" class="text-tradeRed">-2.8%</span>
+            </div>
+            <input type="number" id="ticketSL" value="3710" oninput="recalcOrderTicket()" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-tradeRed font-bold focus:outline-none">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-muted mb-1">
+              <span>TARGET PROFIT (TP1)</span>
+              <span id="tpDistancePct" class="text-tradeGreen">+4.2%</span>
+            </div>
+            <input type="number" id="ticketTP" value="4150" oninput="recalcOrderTicket()" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-tradeGreen font-bold focus:outline-none">
+          </div>
+        </div>
+
+        <!-- CALCULATED LOT & RISK SUMMARY -->
+        <div class="p-3 bg-[#0D111A] border border-white/[0.08] rounded space-y-1.5 text-[11px]">
+          <div class="flex justify-between">
+            <span class="text-muted">Ukuran Lot Rekomendasi:</span>
+            <span id="ticketLotSize" class="text-white font-extrabold text-sm">38 Lot</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted">Total Modal Digunakan:</span>
+            <span id="ticketRequiredCapital" class="text-white font-bold">Rp 14.592.000</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted">Risk-to-Reward (RRR):</span>
+            <span id="ticketRRR" class="text-tradeGreen font-bold">1 : 2.38 (Valid)</span>
+          </div>
+        </div>
+
+        <!-- EXECUTE BUTTON -->
+        <button id="btnExecuteOrder" onclick="executeMarketOrder()" class="w-full py-3 rounded bg-tradeGreen text-black font-extrabold text-xs font-mono tracking-wider hover:opacity-90 transition shadow-lg flex items-center justify-center space-x-1.5">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>EKSEKUSI BUY ORDER (38 LOT)</span>
+        </button>
+
+      </div>
+
+      <!-- RIGHT TAB 2: BROKER SUMMARY / SMC ACCUMULATION TAPE -->
+      <div id="rightContentBroker" class="p-4 space-y-4 font-mono hidden">
+        <div class="border-b border-white/[0.06] pb-2">
+          <span class="text-muted text-[10px] uppercase">Post-Market 16:00 WIB Feed</span>
+          <h3 class="text-xs font-bold text-white mt-0.5" id="brokerBoxTitle">Top 3 Broker Akumulasi BBRI</h3>
+        </div>
+
+        <div id="brokerBarsContainer" class="space-y-3 text-[11px]">
+          <!-- Populated via JS -->
+        </div>
+
+        <div class="p-3 rounded bg-[#0D111A] border border-white/[0.06] text-[11px] space-y-1">
+          <div class="flex justify-between">
+            <span class="text-muted">Modal Bandar (VWAP):</span>
+            <span id="brokerBoxVwap" class="text-white font-bold">Rp 3.820</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted">Konsentrasi Top 3 (BCR3):</span>
+            <span id="brokerBoxBcr" class="text-tradeGreen font-bold">54.2% (Akumulasi)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted">Foreign Net Inflow:</span>
+            <span id="brokerBoxForeign" class="text-tradeGreen font-bold">+Rp 62.1 M</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 3: AI COPILOT INTERACTIVE AUDITOR -->
+      <div id="rightContentCopilot" class="p-4 space-y-3 font-mono flex flex-col h-full hidden">
+        <div class="border-b border-white/[0.06] pb-2">
+          <span class="text-muted text-[10px] uppercase">Algorithmic Pre-Trade Auditor</span>
+          <h3 class="text-xs font-bold text-white mt-0.5">Tanya AI Copilot Keputusan Masuk</h3>
+        </div>
+
+        <!-- INTERACTIVE CHAT STREAM -->
+        <div id="copilotChatStream" class="flex-1 overflow-y-auto space-y-2.5 text-[11px] leading-relaxed pr-1 min-h-[200px]">
+          <div class="p-2.5 rounded bg-[#111622] border border-white/[0.06]">
+            <span class="text-tradeGreen font-bold block mb-1">TRADEMIND Copilot:</span>
+            Silakan tanyakan rencana entry kamu, atau klik uji kelayakan setup saat ini. Saya memverifikasi 4 gerbang: Risk-to-Reward, batas lot risiko 1-2%, keselarasan arah akumulasi bandar, dan buffer ATR.
+          </div>
+        </div>
+
+        <!-- QUICK QUESTION CHIPS -->
+        <div class="flex flex-wrap gap-1 text-[10px]">
+          <button onclick="askCopilotQuick('Audit risiko BBRI di 3840')" class="px-2 py-1 rounded bg-white/5 border border-white/10 text-muted hover:text-white">Audit BBRI</button>
+          <button onclick="askCopilotQuick('Apakah aman masuk XAU/USD sekarang?')" class="px-2 py-1 rounded bg-white/5 border border-white/10 text-muted hover:text-white">Audit Gold</button>
+          <button onclick="askCopilotQuick('Deteksi pola overtrading akun saya')" class="px-2 py-1 rounded bg-white/5 border border-white/10 text-muted hover:text-white">Cek Disiplin</button>
+        </div>
+
+        <!-- CHAT INPUT -->
+        <div class="flex space-x-1 pt-2">
+          <input type="text" id="copilotInput" placeholder="Tanya AI analisa transaksi..." class="flex-1 bg-[#111622] border border-white/15 rounded p-2 text-white text-xs focus:outline-none">
+          <button onclick="sendCopilotMessage()" class="px-3 rounded bg-white text-black font-bold text-xs">
+            Kirim
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- MODAL: CMS EDIT LESSON -->
+  <div id="cmsModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden font-mono">
+    <div class="bg-[#0C0F17] border border-white/15 rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-panelBorder pb-2">
+        <h3 class="text-xs font-bold text-white">PANEL KONTROL KURIKULUM (CMS ADMIN)</h3>
+        <button onclick="closeCmsModal()" class="text-muted hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="text-muted text-[10px] block mb-1">PILIH MODUL</label>
+          <select id="cmsSelectModule" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-white text-xs">
+            <option value="0">Modul 1: Mindset & Risk Management</option>
+            <option value="1">Modul 2: Analisis Teknikal & Price Action</option>
+            <option value="2">Modul 3: Analisis Fundamental & Valuasi</option>
+            <option value="3">Modul 4: Masterclass Bandarmologi & SMC</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-muted text-[10px] block mb-1">JUDUL PELAJARAN</label>
+          <input type="text" id="cmsLessonTitle" value="Rahasia Mengikuti Jejak Bandar (Broker Summary VWAP)" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-white text-xs">
+        </div>
+        <div>
+          <label class="text-muted text-[10px] block mb-1">KONTEN MATERI (MARKDOWN)</label>
+          <textarea id="cmsLessonBody" rows="4" class="w-full bg-[#111622] border border-white/15 rounded p-2 text-white text-xs">Bandar tidak bisa membohongi nilai uang yang mereka bayarkan. VWAP akumulasi dari broker AK dan BK adalah benteng pertahanan harga terkuat.</textarea>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2 border-t border-panelBorder">
+        <button onclick="closeCmsModal()" class="px-3 py-1.5 rounded bg-white/5 text-muted text-xs">Batal</button>
+        <button onclick="saveCmsLesson()" class="px-3 py-1.5 rounded bg-white text-black font-bold text-xs">Simpan ke Vector DB</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed bottom-4 right-4 bg-[#111622] border border-tradeGreen/50 text-white px-4 py-2.5 rounded-lg shadow-2xl font-mono text-xs z-50 flex items-center space-x-2 transition-all duration-300 transform translate-y-12 opacity-0 pointer-events-none">
+    <i data-lucide="check-circle" class="w-4 h-4 text-tradeGreen"></i>
+    <span id="toastMessage">Order Berhasil Dieksekusi</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

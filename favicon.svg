@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TRADEMIND">
+  <style>
+    .bg { fill: #07090E; }
+    .fg { fill: #EDEDED; }
+    @media (prefers-color-scheme: light) {
+      .bg { fill: #F3F1EB; }
+      .fg { fill: #0B0D12; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32"/>
+  <g class="fg" transform="translate(6 6)">
+    <path d="M0 0H20V20H16V5H12V20H8V5H4V20H0Z"/>
+  </g>
+</svg>

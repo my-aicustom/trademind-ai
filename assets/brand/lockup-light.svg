@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 72" fill="none" role="img" aria-label="TRADEMIND">
+  <rect width="248" height="72" fill="#F3F1EB"/>
+  <g transform="translate(24 24)">
+    <g id="mark" transform="scale(1.2)" fill="#0B0D12">
+      <path d="M0 0H20V20H16V5H12V20H8V5H4V20H0Z"/>
+    </g>
+    <g transform="translate(36 0)">
+      <g id="wordmark" fill="#0B0D12">
+        <g id="L-T0" transform="translate(0 0)">
+          <rect x="0" y="0" width="16" height="4"/>
+          <rect x="6" y="0" width="4" height="24"/>
+        </g>
+        <g id="L-R1" transform="translate(20 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="0" y="0" width="13" height="4"/>
+          <rect x="9" y="0" width="4" height="12"/>
+          <rect x="0" y="10" width="13" height="4"/>
+          <polygon points="6,14 10,14 13,24 9,24"/>
+        </g>
+        <g id="L-A2" transform="translate(38 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="11" y="0" width="4" height="24"/>
+          <rect x="0" y="0" width="15" height="4"/>
+          <rect x="4" y="11" width="7" height="4"/>
+        </g>
+        <g id="L-D3" transform="translate(58 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="0" y="0" width="10" height="4"/>
+          <rect x="0" y="20" width="10" height="4"/>
+          <rect x="10" y="4" width="4" height="16"/>
+          <polygon points="10,0 14,4 10,4"/>
+          <polygon points="10,20 14,20 10,24"/>
+        </g>
+        <g id="L-E4" transform="translate(77 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="0" y="0" width="11" height="4"/>
+          <rect x="0" y="10" width="9" height="4"/>
+          <rect x="0" y="20" width="11" height="4"/>
+        </g>
+        <g id="L-M5" transform="translate(93 0)">
+          <rect x="0" y="0" width="20" height="4"/>
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="8" y="0" width="4" height="24"/>
+          <rect x="16" y="0" width="4" height="24"/>
+        </g>
+        <g id="L-I6" transform="translate(118 0)">
+          <rect x="0" y="0" width="6" height="4"/>
+          <rect x="1" y="0" width="4" height="24"/>
+          <rect x="0" y="20" width="6" height="4"/>
+        </g>
+        <g id="L-N7" transform="translate(130 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="11" y="0" width="4" height="24"/>
+          <polygon points="0,0 4,0 15,24 11,24"/>
+        </g>
+        <g id="L-D8" transform="translate(150 0)">
+          <rect x="0" y="0" width="4" height="24"/>
+          <rect x="0" y="0" width="10" height="4"/>
+          <rect x="0" y="20" width="10" height="4"/>
+          <rect x="10" y="4" width="4" height="16"/>
+          <polygon points="10,0 14,4 10,4"/>
+          <polygon points="10,20 14,20 10,24"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
