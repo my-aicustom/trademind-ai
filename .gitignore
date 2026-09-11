@@ -4,3 +4,4 @@ Thumbs.db
 .cache/
 
 .vercel
+.playwright-mcp/
