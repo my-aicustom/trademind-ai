@@ -561,6 +561,7 @@ function closePosition(posId) {
   openPositions.splice(idx, 1);
   renderPositionsTable();
   renderJournalTable();
+  renderFullJournal();
   showToast(`Posisi ${p.ticker} Ditutup. Hasil: ${isProfit ? "+" : "-"}Rp ${Math.abs(pnl).toLocaleString("id-ID")}`);
 }
 
@@ -617,6 +618,365 @@ function renderJournalTable() {
       <td class="py-2 px-2 text-muted text-[10px] truncate max-w-xs" title="${t.aiNote}">${t.aiNote}</td>
     </tr>
   `).join("");
+}
+
+let journalFilter = "ALL";
+
+function filterJournal(filterType) {
+  journalFilter = filterType;
+  renderFullJournal();
+}
+
+function renderFullJournal() {
+  const container = document.getElementById("fullJournalContainer");
+  if (!container) return;
+
+  const totalTrades = closedJournal.length;
+  const winTrades = closedJournal.filter(t => t.pnlClass.includes("text-tradeGreen"));
+  const winCount = winTrades.length;
+  const lossCount = totalTrades - winCount;
+  const winRate = totalTrades > 0 ? ((winCount / totalTrades) * 100).toFixed(1) : "0.0";
+
+  let filtered = closedJournal;
+  if (journalFilter === "WIN") {
+    filtered = closedJournal.filter(t => t.pnlClass.includes("text-tradeGreen"));
+  } else if (journalFilter === "LOSS") {
+    filtered = closedJournal.filter(t => !t.pnlClass.includes("text-tradeGreen"));
+  }
+
+  container.innerHTML = `
+    <!-- 1. BENTO EXECUTIVE METRICS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="flex justify-between items-center text-[10px] text-muted uppercase">
+          <span>WIN RATE AKUN</span>
+          <span class="text-tradeGreen font-bold">+4.2% vs Benchmark</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white">${winRate}%</div>
+        <div class="text-[11px] text-muted">${winCount} Menang • ${lossCount} Kalah (Total ${totalTrades})</div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="flex justify-between items-center text-[10px] text-muted uppercase">
+          <span>NET REALIZED PnL</span>
+          <span class="text-tradeGreen font-bold">ROI +73.8%</span>
+        </div>
+        <div class="text-2xl font-extrabold text-tradeGreen">+Rp 18.450.000</div>
+        <div class="text-[11px] text-muted">Profit Factor: <strong class="text-white">2.84</strong></div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="flex justify-between items-center text-[10px] text-muted uppercase">
+          <span>AVG RISK-TO-REWARD</span>
+          <span class="text-white font-bold">Standar Institusi</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white">1 : 2.6</div>
+        <div class="text-[11px] text-muted">Avg Win: +Rp 2.1M | Avg Loss: -Rp 810K</div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="flex justify-between items-center text-[10px] text-muted uppercase">
+          <span>DISCIPLINE GUARD SCORE</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-tradeGreen/10 text-tradeGreen border border-tradeGreen/30">GRADE A+</span>
+        </div>
+        <div class="text-2xl font-extrabold text-tradeGreen">92 / 100</div>
+        <div class="text-[11px] text-muted">Zero Overleverage • 1x Premature Exit</div>
+      </div>
+    </div>
+
+    <!-- 2. BEHAVIORAL POST-MORTEM & PSYCHOLOGICAL DIAGNOSTICS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 font-mono">
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-3">
+        <div class="flex items-center space-x-2 text-tradeGold font-bold text-xs">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-tradeGold"></i>
+          <span>AI POST-MORTEM: EVALUASI BIAS EMOSIONAL</span>
+        </div>
+        <div class="space-y-2 text-[11px] leading-relaxed">
+          <div class="p-2.5 rounded bg-amber-950/20 border border-amber-900/30 text-amber-200 space-y-1">
+            <div class="font-bold flex justify-between">
+              <span>ANTM — Bias Loss Aversion (Take Profit Prematur)</span>
+              <span class="text-muted text-[10px]">08/09</span>
+            </div>
+            <p class="text-[10px] text-amber-300/80">
+              Close manual di +Rp 300K (+1.9%) padahal struktur fraktal dan volume akumulasi bandar masih valid menuju TP1 (+5.5%). Diagnosa: Cemas profit hilang. Rekomendasi: Gunakan Trailing Stop ATR agar tidak intervensi manual.
+            </p>
+          </div>
+          <div class="p-2.5 rounded bg-rose-950/20 border border-rose-900/30 text-rose-200 space-y-1">
+            <div class="font-bold flex justify-between">
+              <span>BREN — Bias FOMO / Tangkap Pisau Jatuh</span>
+              <span class="text-muted text-[10px]">05/09</span>
+            </div>
+            <p class="text-[10px] text-rose-300/80">
+              Entry buy saat Top 3 Broker (YP, PD) net selling 68% (distribusi deras). Cut-loss disiplin berhasil membatasi rugi di Rp 1.000.000 (sesuai max 2% risk rule). Rekomendasi: Tunggu pantulan VWAP sebelum entry counter-trend.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-3">
+        <div class="flex items-center space-x-2 text-tradeGreen font-bold text-xs">
+          <i data-lucide="shield-check" class="w-4 h-4 text-tradeGreen"></i>
+          <span>DISIPLIN & EDGE STATISTIK TERBUKTI</span>
+        </div>
+        <div class="space-y-2 text-[11px] leading-relaxed">
+          <div class="p-2.5 rounded bg-emerald-950/20 border border-emerald-900/30 text-emerald-200 space-y-1">
+            <div class="font-bold flex justify-between">
+              <span>BBRI & BBCA — Keselarasan Modal Bandar (VWAP)</span>
+              <span class="text-tradeGreen text-[10px]">Win Rate 100%</span>
+            </div>
+            <p class="text-[10px] text-emerald-300/80">
+              Setup yang dieksekusi di area VWAP Bandar menghasilkan Win Rate 100% dengan rata-rata RRR 1:2.4. Ini adalah edge statistik terkuat akun Anda.
+            </p>
+          </div>
+          <div class="p-2.5 rounded bg-emerald-950/20 border border-emerald-900/30 text-emerald-200 space-y-1">
+            <div class="font-bold flex justify-between">
+              <span>XAU/USD — Asian Range Liquidity Sweep</span>
+              <span class="text-tradeGreen text-[10px]">SMC Edge (+$480)</span>
+            </div>
+            <p class="text-[10px] text-emerald-300/80">
+              Eksekusi Smart Money Concept (sweep liquidity Asian Low di $2,638 lalu buy expansion) menghasilkan profit tertinggi. Menahan floating profit disiplin sampai TP tercapai.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. FULL INTERACTIVE JOURNAL TABLE -->
+    <div class="bg-[#0D111A] border border-white/[0.08] rounded-xl overflow-hidden font-mono text-xs">
+      <div class="p-3 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-white uppercase text-xs">Log Transaksi Lengkap</span>
+          <span class="text-[10px] text-muted">(Dicatat Otomatis oleh Sistem)</span>
+        </div>
+        <div class="flex items-center space-x-2 text-[11px]">
+          <button onclick="filterJournal('ALL')" class="px-2.5 py-1 rounded ${journalFilter === 'ALL' ? 'bg-white text-black font-bold' : 'bg-white/5 text-muted hover:text-white'}">Semua (${totalTrades})</button>
+          <button onclick="filterJournal('WIN')" class="px-2.5 py-1 rounded ${journalFilter === 'WIN' ? 'bg-white text-black font-bold' : 'bg-white/5 text-muted hover:text-white'}">Hanya Profit (${winCount})</button>
+          <button onclick="filterJournal('LOSS')" class="px-2.5 py-1 rounded ${journalFilter === 'LOSS' ? 'bg-white text-black font-bold' : 'bg-white/5 text-muted hover:text-white'}">Hanya Evaluasi (${lossCount})</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="text-[10px] text-muted uppercase border-b border-white/[0.04] bg-white/[0.01]">
+            <tr>
+              <th class="py-2.5 px-3">Tanggal</th>
+              <th class="py-2.5 px-3">Ticker</th>
+              <th class="py-2.5 px-3">Sisi</th>
+              <th class="py-2.5 px-3">Entry &rarr; Exit</th>
+              <th class="py-2.5 px-3">Ukuran Lot</th>
+              <th class="py-2.5 px-3">Realized PnL</th>
+              <th class="py-2.5 px-3">R:R</th>
+              <th class="py-2.5 px-3">Disiplin Plan</th>
+              <th class="py-2.5 px-3">Analisa & Evaluasi AI</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/[0.02] text-[11px]">
+            ${filtered.map(t => `
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-2.5 px-3 text-muted">${t.date}</td>
+                <td class="py-2.5 px-3 font-bold text-white">${t.ticker}</td>
+                <td class="py-2.5 px-3">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${t.side === 'BUY' ? 'bg-tradeGreen/10 text-tradeGreen border border-tradeGreen/30' : 'bg-tradeRed/10 text-tradeRed border border-tradeRed/30'}">${t.side}</span>
+                </td>
+                <td class="py-2.5 px-3 text-slate-300">${t.entry} &rarr; ${t.exit}</td>
+                <td class="py-2.5 px-3 text-slate-300">${t.lot}</td>
+                <td class="py-2.5 px-3 ${t.pnlClass}">${t.pnl}</td>
+                <td class="py-2.5 px-3 text-slate-300">${t.rrr}</td>
+                <td class="py-2.5 px-3">
+                  ${t.planFollowed ? '<span class="text-tradeGreen font-bold">✓ Patuh</span>' : '<span class="text-tradeRed font-bold">✕ Melanggar</span>'}
+                </td>
+                <td class="py-2.5 px-3 text-slate-300 text-[11px]">${t.aiNote}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  lucide.createIcons();
+}
+
+function selectTickerFromRadar(ticker) {
+  onSelectInstrument(ticker);
+  const select = document.getElementById("mainTickerSelect");
+  if (select) select.value = ticker;
+  switchView("terminal");
+}
+
+function renderFullRadar() {
+  const container = document.getElementById("fullRadarContainer");
+  if (!container) return;
+
+  const cardsHtml = Object.keys(INSTRUMENTS).map(ticker => {
+    const inst = INSTRUMENTS[ticker];
+    const isSaham = inst.type === "saham";
+    const topBuyer = inst.buyers[0] ? `${inst.buyers[0].code} (${inst.buyers[0].val})` : "-";
+    const topSeller = inst.sellers[0] ? `${inst.sellers[0].code} (${inst.sellers[0].val})` : "-";
+
+    return `
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] hover:border-white/20 transition space-y-3 font-mono">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base font-extrabold text-white">${ticker}</h3>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${isSaham ? 'bg-blue-950/60 text-blue-300 border border-blue-800/40' : 'bg-amber-950/60 text-amber-300 border border-amber-800/40'}">
+                ${isSaham ? 'SAHAM IDX' : 'FOREX / GOLD'}
+              </span>
+            </div>
+            <div class="text-[10px] text-muted truncate max-w-[200px]">${inst.name}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-extrabold text-white">${isSaham ? 'Rp ' + inst.price.toLocaleString('id-ID') : inst.price.toLocaleString('id-ID')}</div>
+            <div class="text-[10px] font-bold ${inst.changeClass}">${inst.change}</div>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded bg-[#111622] border border-white/[0.04] space-y-1.5 text-[11px]">
+          <div class="flex justify-between text-muted">
+            <span>Modal Bandar (VWAP):</span>
+            <span class="text-white font-bold">${isSaham ? 'Rp ' + inst.vwap.toLocaleString('id-ID') : inst.vwap}</span>
+          </div>
+          <div class="flex justify-between text-muted">
+            <span>Konsentrasi Inflow:</span>
+            <span class="text-tradeGreen font-bold">${inst.bcr}</span>
+          </div>
+          <div class="flex justify-between text-muted">
+            <span>Foreign Flow:</span>
+            <span class="text-white font-bold">${inst.foreign}</span>
+          </div>
+          <div class="flex justify-between text-muted pt-1 border-t border-white/[0.04] text-[10px]">
+            <span>Top Inflow / Outflow:</span>
+            <span class="text-slate-300"><strong class="text-tradeGreen">${topBuyer}</strong> vs <strong class="text-tradeRed">${topSeller}</strong></span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${inst.signalClass}">
+            ${inst.signalBadge}
+          </span>
+          <button onclick="selectTickerFromRadar('${ticker}')" class="px-3 py-1.5 rounded bg-white text-black font-extrabold text-xs hover:bg-slate-200 transition">
+            Buka di Chart &rarr;
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <!-- SCREENER STATS BAR -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="text-muted text-[10px] uppercase">FOREIGN FLOW BEI (SESI II)</div>
+        <div class="text-xl font-extrabold text-tradeGreen">+Rp 482.6 Miliar</div>
+        <div class="text-[10px] text-muted">Top Inflow: BBCA, BBRI, BMRI, TLKM</div>
+      </div>
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="text-muted text-[10px] uppercase">KONSENTRASI AKUMULASI (BCR3 > 50%)</div>
+        <div class="text-xl font-extrabold text-white">4 Emiten Terdeteksi</div>
+        <div class="text-[10px] text-tradeGreen">Sinyal Akumulasi Diam-diam Aktif</div>
+      </div>
+      <div class="p-4 rounded-xl bg-[#0D111A] border border-white/[0.08] space-y-1">
+        <div class="text-muted text-[10px] uppercase">SMC FOREX & GOLD SENTIMENT</div>
+        <div class="text-xl font-extrabold text-tradeGold">Bullish Expansion (Gold)</div>
+        <div class="text-[10px] text-muted">Asia Low Swept • London Expansion</div>
+      </div>
+    </div>
+
+    <!-- RADAR CARDS GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 font-mono">
+      ${cardsHtml}
+    </div>
+  `;
+
+  lucide.createIcons();
+}
+
+const ACADEMY_MODULES = [
+  {
+    id: 0,
+    title: "Modul 1: Mindset, Risk Management & Kelly Criterion",
+    subtitle: "Aturan Emas 1-2% & Proteksi Modal",
+    progress: 100,
+    lessons: [
+      { num: "1.1", title: "The Golden Rule: Batas Risiko 1-2% Per Transaksi", dur: "14 Menit", done: true },
+      { num: "1.2", title: "Matematika Ukuran Lot: Menghitung Jarak SL ke Modal", dur: "18 Menit", done: true },
+      { num: "1.3", title: "Mengatasi Bias Emosional: FOMO, Greed & Revenge Trading", dur: "22 Menit", done: true }
+    ]
+  },
+  {
+    id: 1,
+    title: "Modul 2: Analisis Teknikal & Price Action Modern",
+    subtitle: "Struktur Pasar, Fraktal S/R & ATR Dynamic Stop Loss",
+    progress: 100,
+    lessons: [
+      { num: "2.1", title: "Membaca Struktur Pasar: Higher High & Higher Low", dur: "20 Menit", done: true },
+      { num: "2.2", title: "Dynamic Stop Loss Berbasis ATR (Bukan Angka Tebak-tebakan)", dur: "16 Menit", done: true },
+      { num: "2.3", title: "Support & Resistance Fraktal: Validasi Pantulan Harga", dur: "25 Menit", done: true }
+    ]
+  },
+  {
+    id: 2,
+    title: "Modul 3: Analisis Fundamental & Financial Safety Net",
+    subtitle: "Solvabilitas, DER < 1.0, ROE & Valuasi Wajar",
+    progress: 65,
+    lessons: [
+      { num: "3.1", title: "Rasio Solvabilitas: Mengapa DER Wajib di Bawah 1.0", dur: "15 Menit", done: true },
+      { num: "3.2", title: "Return on Equity (ROE) & Pertumbuhan Laba Bersih", dur: "19 Menit", done: true },
+      { num: "3.3", title: "Menghindari Saham Gorengan dengan Arus Kas Operasional", dur: "24 Menit", done: false }
+    ]
+  },
+  {
+    id: 3,
+    title: "Modul 4: Masterclass Bandarmologi BEI & SMC Forex",
+    subtitle: "Broker Summary BEI Paska 2021, VWAP Bandar & SMC Sweeps",
+    progress: 40,
+    lessons: [
+      { num: "4.1", title: "Aturan Post-Market BEI: Membaca Net Buyer & Net Seller", dur: "26 Menit", done: true },
+      { num: "4.2", title: "Menghitung Konsentrasi Top 3 Broker (BCR3) & Modal VWAP", dur: "30 Menit", done: true },
+      { num: "4.3", title: "Deteksi Akumulasi Diam-diam vs Distribusi Agresif", dur: "28 Menit", done: false },
+      { num: "4.4", title: "SMC Forex: Liquidity Sweeps, Order Blocks & Imbalance", dur: "35 Menit", done: false }
+    ]
+  }
+];
+
+function renderFullAcademy() {
+  const container = document.getElementById("fullAcademyContainer");
+  if (!container) return;
+
+  container.innerHTML = ACADEMY_MODULES.map(m => `
+    <div class="p-5 rounded-xl bg-[#0D111A] border border-white/[0.08] hover:border-white/20 transition space-y-4 font-mono">
+      <div class="flex justify-between items-start">
+        <div>
+          <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-tradeGreen/10 text-tradeGreen border border-tradeGreen/30 uppercase">
+            ${m.progress === 100 ? '✓ SELESAI 100%' : `PROGRES ${m.progress}%`}
+          </span>
+          <h3 class="text-sm font-bold text-white mt-1.5">${m.title}</h3>
+          <p class="text-[11px] text-muted">${m.subtitle}</p>
+        </div>
+        <button onclick="openCmsModal()" class="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-muted hover:text-white text-[10px] transition border border-white/10" title="Kelola Materi Modul Ini">
+          Edit (CMS)
+        </button>
+      </div>
+
+      <div class="w-full bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
+        <div class="bg-tradeGreen h-full rounded-full transition-all" style="width: ${m.progress}%"></div>
+      </div>
+
+      <div class="space-y-1.5 pt-1">
+        ${m.lessons.map(l => `
+          <div class="p-2.5 rounded bg-[#111622] border border-white/[0.04] flex items-center justify-between text-[11px] hover:bg-white/[0.02] cursor-pointer transition">
+            <div class="flex items-center space-x-2">
+              <span class="text-tradeGreen font-bold">${l.done ? '✓' : '○'}</span>
+              <span class="text-white">${l.num} ${l.title}</span>
+            </div>
+            <span class="text-muted text-[10px]">${l.dur}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  lucide.createIcons();
 }
 
 function renderBrokerSummaryBox(inst) {
@@ -788,6 +1148,12 @@ function switchView(viewName) {
       chartInstance.applyOptions({ width: container.clientWidth, height: container.clientHeight });
       chartInstance.timeScale().fitContent();
     }, 50);
+  } else if (viewName === "journal") {
+    renderFullJournal();
+  } else if (viewName === "radar") {
+    renderFullRadar();
+  } else if (viewName === "academy") {
+    renderFullAcademy();
   }
 }
 
@@ -856,7 +1222,22 @@ function toggleModal(modalId) {
 
 function openCmsModal() { toggleModal("cmsModal"); }
 function closeCmsModal() { toggleModal("cmsModal"); }
+
 function saveCmsLesson() {
+  const modSelect = document.getElementById("cmsSelectModule");
+  const modIdx = modSelect ? parseInt(modSelect.value) : 0;
+  const titleInput = document.getElementById("cmsLessonTitle");
+  const title = titleInput && titleInput.value.trim() ? titleInput.value.trim() : "Bab Baru";
+
+  if (ACADEMY_MODULES[modIdx]) {
+    ACADEMY_MODULES[modIdx].lessons.push({
+      num: `${modIdx + 1}.${ACADEMY_MODULES[modIdx].lessons.length + 1}`,
+      title: title,
+      dur: "15 Menit",
+      done: false
+    });
+    renderFullAcademy();
+  }
   closeCmsModal();
   showToast("Materi kurikulum berhasil diperbarui ke Vector Database!");
 }
@@ -877,5 +1258,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initLightweightChart();
   renderPositionsTable();
   renderJournalTable();
+  renderFullJournal();
+  renderFullRadar();
+  renderFullAcademy();
   lucide.createIcons();
 });
