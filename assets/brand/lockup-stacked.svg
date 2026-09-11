@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 24" fill="none" role="img" aria-label="TRADEMIND">
-  <g id="mark" transform="scale(1.2)" fill="currentColor">
-    <path d="M0 0H20V20H16V5H12V20H8V5H4V20H0Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 66" fill="none" role="img" aria-label="TRADEMIND">
+  <g transform="translate(66.0 0)">
+    <g id="mark" transform="scale(1.6)" fill="currentColor">
+      <path d="M0 0H20V20H16V5H12V20H8V5H4V20H0Z"/>
+    </g>
   </g>
-  <g transform="translate(36 0)">
+  <g transform="translate(0.0 42)">
     <g id="wordmark" fill="currentColor">
       <g id="L-T0" transform="translate(0 0)">
         <rect x="0" y="0" width="16" height="4"/>

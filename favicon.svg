@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TRADEMIND">
   <style>
-    .bg { fill: #07090E; }
+    .bg { fill: #06080D; }
     .fg { fill: #EDEDED; }
     @media (prefers-color-scheme: light) {
       .bg { fill: #F3F1EB; }

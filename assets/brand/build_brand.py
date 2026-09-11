@@ -19,10 +19,14 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 BRAND = Path(__file__).resolve().parent
-VOID = (7, 9, 14, 255)  # #07090E
+VOID = (6, 8, 13, 255)  # #06080D — terminal void
 BONE = (237, 237, 237, 255)  # #EDEDED
 INK = (11, 13, 18, 255)  # #0B0D12
 PAPER = (243, 241, 235, 255)  # #F3F1EB
+VOID_HEX = "#06080D"
+BONE_HEX = "#EDEDED"
+INK_HEX = "#0B0D12"
+PAPER_HEX = "#F3F1EB"
 
 # Canonical tight mark: 20x20
 # lintel 20x5, columns 4x15, gaps 4
@@ -224,22 +228,38 @@ def build_lockup_svg() -> None:
     pad = 24
     vb_w = total_w + pad * 2
     vb_h = CAP + pad * 2
-    _, inner_dark = lockup_inner("#EDEDED")
+    _, inner_dark = lockup_inner(BONE_HEX)
     dark = svg_header(vb_w, vb_h, 'aria-label="TRADEMIND"')
-    dark += f'  <rect width="{vb_w}" height="{vb_h}" fill="#07090E"/>\n'
+    dark += f'  <rect width="{vb_w}" height="{vb_h}" fill="{VOID_HEX}"/>\n'
     dark += f'  <g transform="translate({pad} {pad})">\n'
     dark += indent(inner_dark, 2)
     dark += "  </g>\n</svg>\n"
     write(BRAND / "lockup-dark.svg", dark)
 
-    light = dark.replace("#07090E", "#F3F1EB").replace("#EDEDED", "#0B0D12")
+    light = dark.replace(VOID_HEX, PAPER_HEX).replace(BONE_HEX, INK_HEX)
     write(BRAND / "lockup-light.svg", light)
+    write(ROOT / "logo.svg", (BRAND / "lockup.svg").read_text(encoding="utf-8"))
+
+    # Stacked lockup (mark over wordmark) for avatars / square applications
+    mark_d = 32
+    wm_w, wm = wordmark_svg("currentColor")
+    stacked_w = max(mark_d, wm_w)
+    gap_s = 10
+    stacked_h = mark_d + gap_s + CAP
+    stacked = svg_header(stacked_w, stacked_h, 'aria-label="TRADEMIND"')
+    stacked += f'  <g transform="translate({(stacked_w - mark_d) / 2} 0)">\n'
+    stacked += indent(mark_group("currentColor", f"scale({mark_d / MARK_W})"), 2)
+    stacked += "  </g>\n"
+    stacked += f'  <g transform="translate({(stacked_w - wm_w) / 2} {mark_d + gap_s})">\n'
+    stacked += indent(wm, 2)
+    stacked += "  </g>\n</svg>\n"
+    write(BRAND / "lockup-stacked.svg", stacked)
 
 
 def build_favicon_svg() -> None:
     body = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TRADEMIND">
   <style>
-    .bg { fill: #07090E; }
+    .bg { fill: #06080D; }
     .fg { fill: #EDEDED; }
     @media (prefers-color-scheme: light) {
       .bg { fill: #F3F1EB; }
@@ -319,10 +339,7 @@ def draw_wordmark(draw: ImageDraw.ImageDraw, ox: int, oy: int, scale: int, fill)
 def render_lockup(bg, fg, scale: int = 4) -> Image.Image:
     mark = 24
     gap = 12
-    wm_w = 0
-    for i, ch in enumerate("TRADEMIND"):
-        w, _ = letter_prims(ch)
-        wm_w += w + letter_track(i, ch)
+    wm_w = wordmark_width()
     pad = 24
     W = (mark + gap + wm_w + pad * 2) * scale
     H = (CAP + pad * 2) * scale
@@ -341,6 +358,54 @@ def render_lockup(bg, fg, scale: int = 4) -> Image.Image:
     col_h = round(15 * mscale)
     draw_mark_px(d, mx, my, col, gap_m, lintel, col_h, fg)
     draw_wordmark(d, mx + mark * scale + gap * scale, my, scale, fg)
+    return img
+
+
+def wordmark_width() -> int:
+    total = 0
+    for i, ch in enumerate("TRADEMIND"):
+        w, _ = letter_prims(ch)
+        total += w + letter_track(i, ch)
+    return total
+
+
+def render_stacked(size: int, bg, fg) -> Image.Image:
+    img = Image.new("RGBA", (size, size), bg)
+    d = ImageDraw.Draw(img)
+    mark_px = 180
+    scale = 5
+    wm_w = wordmark_width()
+    gap = 64
+    block_h = mark_px + gap + CAP * scale
+    y0 = (size - block_h) // 2
+    mscale = mark_px / MARK_W
+    col = round(4 * mscale)
+    gap_m = round(4 * mscale)
+    lintel = round(5 * mscale)
+    col_h = round(15 * mscale)
+    draw_mark_px(d, (size - (3 * col + 2 * gap_m)) // 2, y0, col, gap_m, lintel, col_h, fg)
+    draw_wordmark(d, (size - wm_w * scale) // 2, y0 + mark_px + gap, scale, fg)
+    return img
+
+
+def render_og(w: int, h: int, bg, fg) -> Image.Image:
+    img = Image.new("RGBA", (w, h), bg)
+    d = ImageDraw.Draw(img)
+    scale = 5
+    mark = CAP * scale
+    gap = 40
+    wm_w = wordmark_width()
+    block_w = mark + gap + wm_w * scale
+    block_h = CAP * scale
+    x0 = (w - block_w) // 2
+    y0 = (h - block_h) // 2
+    mscale = mark / MARK_W
+    col = round(4 * mscale)
+    gap_m = round(4 * mscale)
+    lintel = round(5 * mscale)
+    col_h = round(15 * mscale)
+    draw_mark_px(d, x0, y0, col, gap_m, lintel, col_h, fg)
+    draw_wordmark(d, x0 + mark + gap, y0, scale, fg)
     return img
 
 
@@ -382,6 +447,13 @@ def build_rasters() -> None:
     print("wrote assets/brand/lockup-dark.png")
     render_lockup(PAPER, INK, 5).save(BRAND / "lockup-light.png")
     print("wrote assets/brand/lockup-light.png")
+
+    stacked = render_stacked(1080, VOID, BONE)
+    stacked.convert("RGB").save(ROOT / "brand-logo.jpg", quality=95, subsampling=0)
+    print("wrote brand-logo.jpg")
+    og = render_og(1200, 630, VOID, BONE)
+    og.convert("RGB").save(ROOT / "og-image.jpg", quality=95, subsampling=0)
+    print("wrote og-image.jpg")
 
 
 PREVIEW_HTML = """<!DOCTYPE html>

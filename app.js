@@ -821,6 +821,34 @@ function switchRightTab(tabKey) {
   });
 }
 
+function openRightPanel(tabKey = 'order') {
+  const panel = document.getElementById("rightPanel");
+  if (panel) {
+    panel.classList.remove("translate-x-full");
+    panel.classList.add("translate-x-0");
+  }
+  if (tabKey) switchRightTab(tabKey);
+}
+
+function closeRightPanel() {
+  const panel = document.getElementById("rightPanel");
+  if (panel) {
+    panel.classList.add("translate-x-full");
+    panel.classList.remove("translate-x-0");
+  }
+}
+
+function toggleRightPanel(tabKey = 'order') {
+  const panel = document.getElementById("rightPanel");
+  if (panel) {
+    if (panel.classList.contains("translate-x-full")) {
+      openRightPanel(tabKey);
+    } else {
+      closeRightPanel();
+    }
+  }
+}
+
 function toggleModal(modalId) {
   const m = document.getElementById(modalId);
   if (m) m.classList.toggle("hidden");

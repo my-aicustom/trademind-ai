@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TRADEMIND — Institutional Trading Terminal & Market Microstructure</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="apple-touch-icon" href="favicon.svg">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="mask-icon" href="assets/brand/mark.svg" color="#06080D">
+  <meta name="theme-color" content="#06080D">
   <meta property="og:title" content="TRADEMIND — Institutional Financial Intelligence Terminal">
   <meta property="og:description" content="Autonomous Market Microstructure, Bandarmologi & Behavioral Trading Journal">
   <meta property="og:image" content="og-image.jpg">
@@ -84,9 +87,11 @@
     <div class="flex items-center space-x-3">
       <!-- Monogram -->
       <div class="flex items-center space-x-2 pr-3 border-r border-panelBorder">
-        <div class="w-7 h-7 rounded bg-[#101522] border border-white/15 p-0.5 flex items-center justify-center">
-          <img src="favicon.svg" alt="TRADEMIND" class="w-full h-full">
-        </div>
+        <svg class="w-7 h-7 shrink-0" viewBox="0 0 32 32" fill="#EDEDED" role="img" aria-label="TRADEMIND">
+          <rect width="32" height="32" fill="#06080D"/>
+          <path d="M6 6H26V26H22V11H18V26H14V11H10V26H6Z"/>
+          <rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        </svg>
         <span class="font-extrabold tracking-wider text-white font-sans hidden sm:inline-block">TRADEMIND</span>
       </div>
 
@@ -145,7 +150,7 @@
       </div>
 
       <!-- MARKET STATUS BADGE -->
-      <div class="px-2.5 py-1 rounded bg-tradeGreen/10 border border-tradeGreen/30 flex items-center space-x-1.5 text-[11px] text-tradeGreen">
+      <div class="hidden sm:flex px-2.5 py-1 rounded bg-tradeGreen/10 border border-tradeGreen/30 items-center space-x-1.5 text-[11px] text-tradeGreen">
         <span class="w-1.5 h-1.5 rounded-full bg-tradeGreen animate-pulse"></span>
         <span class="font-bold">MARKET: SESI II OPEN</span>
       </div>
@@ -162,6 +167,10 @@
     <aside class="w-12 border-r border-panelBorder bg-[#080B11] flex flex-col items-center py-3 space-y-4 flex-shrink-0 z-20">
       <button onclick="switchView('terminal')" id="railBtnTerminal" title="Chart & Order Execution" class="w-9 h-9 rounded flex items-center justify-center text-white nav-btn-active transition">
         <i data-lucide="candlestick-chart" class="w-4 h-4"></i>
+      </button>
+      <!-- MOBILE COPILOT & ORDER SHORTCUT -->
+      <button onclick="toggleRightPanel('copilot')" id="railBtnCopilot" title="AI Copilot & Order" class="lg:hidden w-9 h-9 rounded flex items-center justify-center text-tradeGreen bg-tradeGreen/10 hover:bg-tradeGreen/20 transition">
+        <i data-lucide="bot" class="w-4 h-4"></i>
       </button>
       <button onclick="switchView('radar')" id="railBtnRadar" title="Radar Bandarmologi & Sinyal" class="w-9 h-9 rounded flex items-center justify-center text-muted hover:text-white transition">
         <i data-lucide="radar" class="w-4 h-4"></i>
@@ -204,6 +213,12 @@
               <div>TP: <strong id="chartTpVal" class="text-tradeGreen">4.150</strong></div>
             </div>
           </div>
+
+          <!-- MOBILE FLOATING ACTION: OPEN ORDER & COPILOT -->
+          <button onclick="toggleRightPanel('order')" class="lg:hidden absolute bottom-3 right-3 bg-tradeGreen hover:bg-tradeGreen/90 text-black font-mono font-bold text-xs px-3.5 py-2 rounded-full shadow-2xl flex items-center space-x-1.5 z-20 transition cursor-pointer">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>Order / AI Copilot</span>
+          </button>
         </div>
 
         <!-- DOCKABLE BOTTOM DRAWER (ACTIVE POSITIONS, JOURNAL, ORDER FLOW) -->
@@ -335,22 +350,29 @@
 
     </div>
 
-    <!-- RIGHT PANEL: ORDER TICKET, COPILOT & BROKER SUMMARY (360px WIDTH) -->
-    <aside class="w-80 sm:w-96 border-l border-panelBorder bg-[#080B11] flex flex-col flex-shrink-0 overflow-y-auto z-20 text-xs">
+    <!-- RIGHT PANEL: ORDER TICKET, COPILOT & BROKER SUMMARY -->
+    <!-- On desktop: permanent side column. On mobile: full-height slide-over drawer -->
+    <aside id="rightPanel" class="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#080B11] border-l border-panelBorder flex flex-col overflow-y-auto text-xs shadow-2xl transition-transform duration-300 translate-x-full lg:static lg:translate-x-0 lg:w-80 xl:w-96 lg:flex lg:z-20">
       
-      <!-- RIGHT PANEL TABS -->
-      <div class="h-9 border-b border-panelBorder flex items-center justify-around px-2 text-[11px] font-mono bg-[#0D111A]">
-        <button onclick="switchRightTab('order')" id="rightTabOrder" class="text-white font-bold border-b border-white pb-1 flex items-center space-x-1">
-          <i data-lucide="zap" class="w-3 h-3 text-tradeGreen"></i>
-          <span>Order Ticket</span>
-        </button>
-        <button onclick="switchRightTab('broker')" id="rightTabBroker" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
-          <i data-lucide="layers" class="w-3 h-3"></i>
-          <span>Broker Summary</span>
-        </button>
-        <button onclick="switchRightTab('copilot')" id="rightTabCopilot" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
-          <i data-lucide="bot" class="w-3 h-3"></i>
-          <span>AI Copilot</span>
+      <!-- RIGHT PANEL TABS + MOBILE CLOSE BUTTON -->
+      <div class="h-10 border-b border-panelBorder flex items-center justify-between px-3 text-[11px] font-mono bg-[#0D111A] flex-shrink-0">
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button onclick="switchRightTab('order')" id="rightTabOrder" class="text-white font-bold border-b border-white pb-1 flex items-center space-x-1">
+            <i data-lucide="zap" class="w-3 h-3 text-tradeGreen"></i>
+            <span>Order Ticket</span>
+          </button>
+          <button onclick="switchRightTab('broker')" id="rightTabBroker" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
+            <i data-lucide="layers" class="w-3 h-3"></i>
+            <span>Broker</span>
+          </button>
+          <button onclick="switchRightTab('copilot')" id="rightTabCopilot" class="text-muted hover:text-white pb-1 flex items-center space-x-1">
+            <i data-lucide="bot" class="w-3 h-3"></i>
+            <span>AI Copilot</span>
+          </button>
+        </div>
+        <!-- MOBILE CLOSE BUTTON -->
+        <button onclick="closeRightPanel()" class="lg:hidden p-1 text-muted hover:text-white" title="Tutup Panel">
+          <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
