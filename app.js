@@ -559,6 +559,8 @@ function closePosition(posId) {
   });
 
   openPositions.splice(idx, 1);
+  userEquity += pnl;
+  updateEquityDisplay();
   renderPositionsTable();
   renderJournalTable();
   renderFullJournal();
@@ -963,13 +965,18 @@ function renderFullAcademy() {
       </div>
 
       <div class="space-y-1.5 pt-1">
-        ${m.lessons.map(l => `
-          <div class="p-2.5 rounded bg-[#111622] border border-white/[0.04] flex items-center justify-between text-[11px] hover:bg-white/[0.02] cursor-pointer transition">
-            <div class="flex items-center space-x-2">
-              <span class="text-tradeGreen font-bold">${l.done ? '✓' : '○'}</span>
-              <span class="text-white">${l.num} ${l.title}</span>
+        ${m.lessons.map((l, idx) => `
+          <div onclick="openLessonDetail(${m.id}, ${idx})" class="p-2.5 rounded bg-[#111622] border border-white/[0.04] flex items-center justify-between text-[11px] hover:bg-white/[0.06] hover:border-white/20 cursor-pointer transition group">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${l.done ? 'bg-tradeGreen/20 text-tradeGreen font-bold' : 'border border-white/20 text-muted'}">
+                ${l.done ? '✓' : ''}
+              </span>
+              <span class="text-white group-hover:text-tradeGreen transition font-medium">${l.num} ${l.title}</span>
             </div>
-            <span class="text-muted text-[10px]">${l.dur}</span>
+            <div class="flex items-center space-x-2 flex-shrink-0">
+              <span class="text-muted text-[10px] hidden sm:inline">${l.dur}</span>
+              <span class="px-1.5 py-0.5 rounded text-[9px] bg-white/5 group-hover:bg-tradeGreen group-hover:text-black transition font-bold text-muted">Buka &rarr;</span>
+            </div>
           </div>
         `).join("")}
       </div>
@@ -1240,6 +1247,631 @@ function saveCmsLesson() {
   }
   closeCmsModal();
   showToast("Materi kurikulum berhasil diperbarui ke Vector Database!");
+}
+
+// =============================================================================
+// 8B. INTERACTIVE ACADEMY & DEMO SIMULATION PROTOCOL ("CEK OMBAK")
+// =============================================================================
+let currentActiveLessonKey = "0_0";
+
+const LESSON_DATA = {
+  "0_0": {
+    code: "MODUL 1.1",
+    category: "RISK MANAGEMENT & KELLY CRITERION",
+    title: "The Golden Rule: Batas Risiko 1-2% Per Transaksi",
+    goldenRule: "Tidak ada satu pun trade yang boleh mempertaruhkan lebih dari 2% total ekuitas portofolio. Pada modal Rp 25 Juta, kerugian maksimal jika terkena Stop Loss wajib dibatasi di Rp 500.000.",
+    explanation: "Mayoritas trader retail hancur bukan karena salah menganalisis arah pasar, melainkan karena 'Risk of Ruin'. Dengan mempertaruhkan 10% per transaksi, 5 kali salah beruntun memotong modal 41% dan butuh gain +70% hanya untuk balik modal (BEP). Dengan aturan 2%, 10 kali rugi beruntun hanya mengurangi 18% ekuitas—trader tetap tenang dan disiplin mengeksekusi edge statistik.",
+    checklist: [
+      "Periksa total saldo ekuitas saat ini (e.g. Rp 25.000.000).",
+      "Kunci slider risiko di 1.0% (Konservatif) atau 2.0% (Golden Standard).",
+      "Pastikan nominal risiko tidak pernah melebihi Rp 500.000 sebelum menekan tombol Buy.",
+      "Jangan pernah menggeser Stop Loss menjauhi harga ketika pasar sedang turun."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "Setup BBRI: 38 Lot (Resiko Maks Rp 494.000 / 1.98%)"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 180" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="180" fill="#080B11" rx="8"/>
+      <line x1="60" y1="20" x2="60" y2="150" stroke="#1E293B" stroke-width="1.5"/>
+      <line x1="60" y1="150" x2="560" y2="150" stroke="#1E293B" stroke-width="1.5"/>
+      <line x1="60" y1="85" x2="560" y2="85" stroke="#1E293B" stroke-dasharray="3 3"/>
+      <text x="50" y="25" fill="#64748B" font-size="9" text-anchor="end" font-family="monospace">100%</text>
+      <text x="50" y="88" fill="#64748B" font-size="9" text-anchor="end" font-family="monospace">50%</text>
+      <text x="50" y="152" fill="#64748B" font-size="9" text-anchor="end" font-family="monospace">0%</text>
+      <text x="60" y="166" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Trade 0</text>
+      <text x="180" y="166" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Trade 5</text>
+      <text x="310" y="166" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Trade 10</text>
+      <text x="440" y="166" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Trade 15</text>
+      <text x="540" y="166" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Trade 20</text>
+      <path d="M 60,20 Q 140,85 240,118 T 540,145" fill="none" stroke="#F43F5E" stroke-width="2.5"/>
+      <circle cx="240" cy="118" r="4" fill="#F43F5E"/>
+      <text x="250" y="115" fill="#F43F5E" font-size="10" font-weight="bold" font-family="monospace">Risiko 10%: Drawdown -65% (Kematian Modal)</text>
+      <path d="M 60,20 Q 250,45 540,65" fill="none" stroke="#10B981" stroke-width="2.5"/>
+      <circle cx="540" cy="65" r="4" fill="#10B981"/>
+      <text x="380" y="55" fill="#10B981" font-size="10" font-weight="bold" font-family="monospace">Aturan Emas 2%: Bertahan di 67%</text>
+    </svg>`
+  },
+  "0_1": {
+    code: "MODUL 1.2",
+    category: "MATEMATIKA POSITION SIZING",
+    title: "Matematika Ukuran Lot: Menghitung Jarak SL ke Modal",
+    goldenRule: "Ukuran lot BUKAN ditentukan oleh besarnya feeling atau sisa cash, melainkan formula matematis: Ukuran Lot = (Modal × Risk%) / (Jarak SL × 100).",
+    explanation: "Jika trader membeli saham tanpa menghitung jarak Stop Loss, maka Stop Loss lebar akan membakar portofolio saat tersentuh. Dengan formula Trademind, jika SL lebar (misal 5%), ukuran lot otomatis mengecil. Jika SL ketat (misal 2%), ukuran lot boleh membesar. Hasil akhirnya: nominal kerugian jika salah AKAN SELALU TETAP Rp 500.000.",
+    checklist: [
+      "Tentukan level Stop Loss terlebih dahulu berdasarkan struktur grafik (bukan modal).",
+      "Hitung jarak: Harga Entry - Harga Stop Loss (e.g. 3.840 - 3.710 = Rp 130).",
+      "Bagi batas toleransi risiko (Rp 500.000) dengan (130 × 100) = 38.4 Lot.",
+      "Bulatkan selalu ke bawah (Round Down) menjadi 38 Lot agar tidak over-leverage."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "Kalkulasi Lot Otomatis: 38 Lot"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="20" y="25" width="160" height="110" rx="8" fill="#111622" stroke="#1E293B" stroke-width="1.5"/>
+      <text x="100" y="48" fill="#94A3B8" font-size="10" text-anchor="middle" font-family="monospace">LANGKAH 1</text>
+      <text x="100" y="70" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" font-family="monospace">Toleransi Risiko 2%</text>
+      <text x="100" y="92" fill="#10B981" font-size="13" font-weight="bold" text-anchor="middle" font-family="monospace">Rp 500.000</text>
+      <text x="100" y="112" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">Modal: Rp 25.000.000</text>
+      <text x="195" y="85" fill="#38BDF8" font-size="18" font-weight="bold" text-anchor="middle" font-family="monospace">÷</text>
+      <rect x="210" y="25" width="170" height="110" rx="8" fill="#111622" stroke="#1E293B" stroke-width="1.5"/>
+      <text x="295" y="48" fill="#94A3B8" font-size="10" text-anchor="middle" font-family="monospace">LANGKAH 2</text>
+      <text x="295" y="70" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" font-family="monospace">Jarak SL Per Lot</text>
+      <text x="295" y="92" fill="#F43F5E" font-size="13" font-weight="bold" text-anchor="middle" font-family="monospace">Rp 13.000 / Lot</text>
+      <text x="295" y="112" fill="#64748B" font-size="9" text-anchor="middle" font-family="monospace">(3.840 - 3.710) × 100</text>
+      <text x="395" y="85" fill="#38BDF8" font-size="18" font-weight="bold" text-anchor="middle" font-family="monospace">=</text>
+      <rect x="410" y="25" width="170" height="110" rx="8" fill="#10B981" fill-opacity="0.1" stroke="#10B981" stroke-width="1.5"/>
+      <text x="495" y="48" fill="#10B981" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">HASIL MATEMATIS</text>
+      <text x="495" y="78" fill="#FFFFFF" font-size="20" font-weight="extrabold" text-anchor="middle" font-family="monospace">38 LOT</text>
+      <text x="495" y="105" fill="#10B981" font-size="9" text-anchor="middle" font-family="monospace">Pembulatan Kebawah</text>
+    </svg>`
+  },
+  "0_2": {
+    code: "MODUL 1.3",
+    category: "PSIKOLOGI & DISIPLIN TRADING",
+    title: "Mengatasi Bias Emosional: FOMO, Greed & Revenge Trading",
+    goldenRule: "Setiap kali emosi mengambil alih terminal, probabilitas kalah meningkat 80%. Trademind mengaktifkan Discipline Guard untuk membekukan eksekusi saat pelanggaran beruntun terjadi.",
+    explanation: "Fenomena psikologis paling mematikan bagi trader adalah Revenge Trading: setelah rugi satu kali, timbul rasa marah dan ingin langsung 'membalas' dengan menggandakan ukuran lot (martingale). Algoritma Smart Journal kami mencatat pola ini dan memberi sinyal bahaya sebelum modal Anda habis terbakar.",
+    checklist: [
+      "Ambil jeda minimal 15 menit setelah posisi ditutup dalam keadaan rugi.",
+      "Dilarang menambah ukuran lot lebih dari 2% pasca kekalahan.",
+      "Periksa jurnal: Apakah alasan entry Anda karena setup teknikal atau sekadar takut ketinggalan (FOMO)?",
+      "Patuhi circuit breaker: 3 loss dalam 1 hari berarti STOP trading untuk hari itu."
+    ],
+    recommendedSetup: {
+      ticker: "BREN",
+      side: "SELL",
+      entry: 6850,
+      sl: 7100,
+      tp1: 6400,
+      riskPct: 1.0,
+      note: "Setup Proteksi Disiplin (Hindari FOMO di Saham Distribusi)"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <circle cx="90" cy="85" r="32" fill="#111622" stroke="#F59E0B" stroke-width="2"/>
+      <text x="90" y="82" fill="#F59E0B" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">1. FOMO</text>
+      <text x="90" y="96" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Buy di Pucuk</text>
+      <line x1="125" y1="85" x2="175" y2="85" stroke="#475569" stroke-width="2"/>
+      <circle cx="210" cy="85" r="32" fill="#111622" stroke="#F43F5E" stroke-width="2"/>
+      <text x="210" y="82" fill="#F43F5E" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">2. PANIC</text>
+      <text x="210" y="96" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Cut Loss Telat</text>
+      <line x1="245" y1="85" x2="295" y2="85" stroke="#475569" stroke-width="2"/>
+      <circle cx="330" cy="85" r="32" fill="#111622" stroke="#F43F5E" stroke-width="2" stroke-dasharray="3 3"/>
+      <text x="330" y="80" fill="#F43F5E" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">3. REVENGE</text>
+      <text x="330" y="94" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Over-Leverage</text>
+      <line x1="365" y1="85" x2="415" y2="85" stroke="#475569" stroke-width="2"/>
+      <rect x="420" y="45" width="160" height="80" rx="8" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-width="2"/>
+      <text x="500" y="73" fill="#10B981" font-size="10" font-weight="extrabold" text-anchor="middle" font-family="monospace">TRADEMIND AI</text>
+      <text x="500" y="90" fill="#FFFFFF" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">DISCIPLINE GUARD</text>
+      <text x="500" y="107" fill="#38BDF8" font-size="8" text-anchor="middle" font-family="monospace">Kunci Terminal 24 Jam</text>
+    </svg>`
+  },
+  "1_0": {
+    code: "MODUL 2.1",
+    category: "PRICE ACTION & MARKET STRUCTURE",
+    title: "Membaca Struktur Pasar: Higher High & Higher Low",
+    goldenRule: "Jangan pernah melawan tren utama (Don't fight the trend). Konfirmasi Break of Structure (BOS) adalah syarat mutlak sebelum entry buy.",
+    explanation: "Dalam tren naik (uptrend) yang sehat, harga akan terus membentuk puncak yang lebih tinggi (Higher High) dan lembah yang lebih tinggi (Higher Low). Ketika harga menembus level puncak sebelumnya dengan candle impulsif dan volume tinggi, terjadi Break of Structure (BOS). Entry terbaik adalah saat harga melakukan pullback (retracement) ke area Higher Low tersebut.",
+    checklist: [
+      "Identifikasi swing high dan swing low terakhir pada timeframe 15 menit atau 1 jam.",
+      "Tunggu candle close di atas level High sebelumnya (validasi BOS).",
+      "Pasang limit order di zona pullback (retest area) bukan mengejar candle hijau panjang.",
+      "Letakkan Stop Loss di bawah swing low valid terakhir."
+    ],
+    recommendedSetup: {
+      ticker: "BBCA",
+      side: "BUY",
+      entry: 9950,
+      sl: 9650,
+      tp1: 10400,
+      riskPct: 2.0,
+      note: "Setup BBCA: Pullback HL menuju ekspansi All-Time High"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <polyline points="50,140 130,70 190,110 300,40 370,85 520,25" fill="none" stroke="#10B981" stroke-width="2.5"/>
+      <circle cx="50" cy="140" r="4" fill="#10B981"/>
+      <text x="50" y="155" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="monospace">Low</text>
+      <circle cx="130" cy="70" r="4" fill="#38BDF8"/>
+      <text x="130" y="60" fill="#38BDF8" font-size="9" text-anchor="middle" font-family="monospace">High</text>
+      <circle cx="190" cy="110" r="4" fill="#10B981"/>
+      <text x="190" y="125" fill="#10B981" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Higher Low (HL)</text>
+      <line x1="130" y1="70" x2="300" y2="70" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="215" y="65" fill="#F59E0B" font-size="9" font-family="monospace">BOS (Break of Structure)</text>
+      <circle cx="300" cy="40" r="4" fill="#38BDF8"/>
+      <text x="300" y="30" fill="#38BDF8" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Higher High (HH)</text>
+      <circle cx="370" cy="85" r="5" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="370" y="102" fill="#10B981" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">ENTRY ZONE (Pullback)</text>
+      <line x1="300" y1="40" x2="520" y2="40" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="410" y="35" fill="#F59E0B" font-size="9" font-family="monospace">BOS Confirm</text>
+      <circle cx="520" cy="25" r="4" fill="#10B981"/>
+      <text x="520" y="18" fill="#10B981" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Target TP (New HH)</text>
+    </svg>`
+  },
+  "1_1": {
+    code: "MODUL 2.2",
+    category: "VOLATILITAS & DYNAMIC STOP LOSS",
+    title: "Dynamic Stop Loss Berbasis ATR (Bukan Angka Tebak-tebakan)",
+    goldenRule: "Stop Loss wajib ditaruh di luar batas volatilitas normal pasar (1.5x - 2.0x ATR) agar tidak menjadi korban wick hunting oleh algoritma pasar.",
+    explanation: "Banyak trader memasang SL di angka bulat (seperti persis di bawah swing low atau persis minus 2%). Ini adalah sasaran empuk bandar yang sengaja membuat 'shadow/wick' ke bawah untuk memicu stop-out retail sebelum harga berbalik arah terbang. Dengan menambahkan buffer 1.5 × Average True Range (ATR), posisi Anda terlindungi dari noise pasar.",
+    checklist: [
+      "Cek nilai indikator ATR (14) pada saham/aset yang dituju.",
+      "Tentukan Swing Low terdekat.",
+      "Kurangkan Swing Low dengan (1.5 × ATR) untuk menentukan batas SL absolut.",
+      "Masukkan level SL ini ke Order Ticket untuk mengunci proteksi modal."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "SL 3.710 dihitung dari Swing Low 3.750 dikurangi buffer ATR 40 poin"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <line x1="80" y1="90" x2="520" y2="90" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <text x="90" y="82" fill="#94A3B8" font-size="9" font-family="monospace">Swing Low Level (Support Retail: 3.750)</text>
+      <line x1="180" y1="40" x2="180" y2="100" stroke="#F43F5E" stroke-width="1.5"/>
+      <rect x="174" y="50" width="12" height="35" fill="#F43F5E"/>
+      <line x1="240" y1="35" x2="240" y2="120" stroke="#10B981" stroke-width="1.5"/>
+      <rect x="234" y="45" width="12" height="25" fill="#10B981"/>
+      <circle cx="240" cy="120" r="3" fill="#F43F5E"/>
+      <line x1="140" y1="105" x2="330" y2="105" stroke="#F43F5E" stroke-width="2"/>
+      <text x="340" y="108" fill="#F43F5E" font-size="9" font-weight="bold" font-family="monospace">✕ SL Retail (Terkutuk/Hunted di 3.740)</text>
+      <rect x="140" y="115" width="380" height="35" fill="#10B981" fill-opacity="0.1" stroke="#10B981" stroke-width="1" stroke-dasharray="2 2"/>
+      <line x1="140" y1="140" x2="520" y2="140" stroke="#10B981" stroke-width="2"/>
+      <text x="340" y="135" fill="#10B981" font-size="9" font-weight="bold" font-family="monospace">✓ Dynamic ATR 1.5x Buffer (SL Trademind: 3.710 Aman)</text>
+      <line x1="300" y1="30" x2="300" y2="80" stroke="#10B981" stroke-width="1.5"/>
+      <rect x="294" y="30" width="12" height="40" fill="#10B981"/>
+    </svg>`
+  },
+  "1_2": {
+    code: "MODUL 2.3",
+    category: "SUPPORT & RESISTANCE FRAKTAL",
+    title: "Support & Resistance Fraktal: Validasi Pantulan Harga",
+    goldenRule: "Support bukan garis tipis 1 titik, melainkan area/zona likuiditas. Pantulan baru terkonfirmasi jika ada rejection wick panjang disertai lonjakan volume transaksi.",
+    explanation: "Menggambar support resistance hanya pada satu garis sering berujung false breakout. Fraktal mengidentifikasi titik balik harga dengan membandingkan 5 candle: 1 candle terendah di tengah yang diapit oleh 2 candle lebih tinggi di kiri dan kanannya. Area ini menyimpan kumpulan order institusi yang siap menyerap penawaran jual.",
+    checklist: [
+      "Identifikasi level horizontal yang telah disentuh minimal 2-3 kali.",
+      "Tandai sebagai 'Zona Permintaan' (Demand Zone) selebar 1-2 spread harga.",
+      "Tunggu pembentukan candle Pin Bar (buntut bawah panjang) saat menyentuh zona.",
+      "Konfirmasi volume: volume beli harus lebih tinggi dari rata-rata 20 candle."
+    ],
+    recommendedSetup: {
+      ticker: "ANTM",
+      side: "BUY",
+      entry: 1565,
+      sl: 1510,
+      tp1: 1650,
+      riskPct: 2.0,
+      note: "Setup ANTM: Pantulan Support Fraktal di 1.540"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="60" y="110" width="480" height="35" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-width="1.5"/>
+      <text x="75" y="132" fill="#10B981" font-size="10" font-weight="bold" font-family="monospace">ZONA DEMAND FRAKTAL (1.530 - 1.550)</text>
+      <line x1="140" y1="60" x2="140" y2="125" stroke="#F43F5E" stroke-width="2"/>
+      <circle cx="140" cy="125" r="3" fill="#10B981"/>
+      <text x="140" y="55" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Sentuhan 1</text>
+      <line x1="280" y1="40" x2="280" y2="130" stroke="#F43F5E" stroke-width="2"/>
+      <circle cx="280" cy="130" r="3" fill="#10B981"/>
+      <text x="280" y="35" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Sentuhan 2</text>
+      <line x1="420" y1="45" x2="420" y2="135" stroke="#10B981" stroke-width="2"/>
+      <rect x="415" y="55" width="10" height="20" fill="#10B981"/>
+      <circle cx="420" cy="135" r="4" fill="#38BDF8"/>
+      <text x="420" y="40" fill="#38BDF8" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Pin Bar Rejection</text>
+      <text x="420" y="158" fill="#10B981" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">▲ KONFIRMASI ENTRY</text>
+    </svg>`
+  },
+  "2_0": {
+    code: "MODUL 3.1",
+    category: "FUNDAMENTAL & FINANCIAL SAFETY NET",
+    title: "Rasio Solvabilitas: Mengapa DER Wajib di Bawah 1.0",
+    goldenRule: "Jangan pernah menahan saham untuk swing / investasi jika Debt-to-Equity Ratio (DER) di atas 1.0x atau utang berbunga membengkak di era suku bunga tinggi.",
+    explanation: "Teknikal yang bagus akan hancur seketika jika perusahaan terancam Penundaan Kewajiban Pembayaran Utang (PKPU) atau kebangkrutan. DER di bawah 1.0x menjamin bahwa setiap Rp 1 utang ditopang oleh lebih dari Rp 1 modal sendiri. Emiten dengan neraca keuangan sehat mampu bertahan dalam krisis ekonomi dan tidak rentan aksi right issue diskon gila-gilaan.",
+    checklist: [
+      "Buka laporan keuangan kuartal terakhir emiten di IDX.",
+      "Bagi Total Liabilitas Berbunga dengan Total Ekuitas.",
+      "Jika DER > 1.2x (selain sektor perbankan), coret dari daftar watchlist swing.",
+      "Periksa Cash Ratio: minimal memiliki kas lancar untuk menutup utang jangka pendek."
+    ],
+    recommendedSetup: {
+      ticker: "BBCA",
+      side: "BUY",
+      entry: 9950,
+      sl: 9650,
+      tp1: 10400,
+      riskPct: 2.0,
+      note: "BBCA: Rasio CAR 28% & Kualitas Aset Terkuat di ASEAN"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="40" y="25" width="220" height="120" rx="8" fill="#111622" stroke="#10B981" stroke-width="1.5"/>
+      <text x="150" y="45" fill="#10B981" font-size="11" font-weight="bold" text-anchor="middle" font-family="monospace">EMITEN SEHAT (DER 0.45x)</text>
+      <rect x="60" y="60" width="80" height="65" fill="#10B981" rx="4"/>
+      <text x="100" y="97" fill="#000" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">Ekuitas 69%</text>
+      <rect x="150" y="60" width="80" height="30" fill="#F59E0B" rx="4"/>
+      <text x="190" y="79" fill="#000" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Utang 31%</text>
+      <rect x="340" y="25" width="220" height="120" rx="8" fill="#111622" stroke="#F43F5E" stroke-width="1.5"/>
+      <text x="450" y="45" fill="#F43F5E" font-size="11" font-weight="bold" text-anchor="middle" font-family="monospace">EMITEN BERBAHAYA (DER 3.8x)</text>
+      <rect x="360" y="60" width="60" height="25" fill="#10B981" rx="4"/>
+      <text x="390" y="76" fill="#000" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">Ekuitas 20%</text>
+      <rect x="430" y="60" width="110" height="65" fill="#F43F5E" rx="4"/>
+      <text x="485" y="97" fill="#FFF" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">Utang 80%</text>
+      <text x="450" y="140" fill="#F43F5E" font-size="9" text-anchor="middle" font-family="monospace">⚠️ Resiko Gagal Bayar & Suspensi</text>
+    </svg>`
+  },
+  "2_1": {
+    code: "MODUL 3.2",
+    category: "PROFITABILITAS & NILAI INTRINSIK",
+    title: "Return on Equity (ROE) & Pertumbuhan Laba Bersih",
+    goldenRule: "Hanya alokasikan modal pada bisnis yang mampu mencetak ROE di atas 15% secara konsisten selama 3 tahun berturut-turut.",
+    explanation: "ROE mengukur seberapa efisien manajemen perusahaan memutar uang pemegang saham untuk menghasilkan laba bersih. Perusahaan dengan ROE tinggi memiliki 'economic moat' (keunggulan bersaing berkelanjutan) yang mampu melawan inflasi dan menaikkan harga jual tanpa kehilangan pelanggan.",
+    checklist: [
+      "Periksa tren ROE dalam 3-5 tahun terakhir.",
+      "Pastikan ROE tidak semu (bukan berasal dari lonjakan utang ekstrim).",
+      "Hitung rasio Price to Earnings (PER) relatif terhadap pertumbuhan laba (PEG < 1.0).",
+      "Prioritaskan market leader di sektornya."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "BBRI: ROE 19.8% dengan dividen yield solid ~6.5%"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="40" y="55" width="140" height="60" rx="8" fill="#111622" stroke="#38BDF8" stroke-width="1.5"/>
+      <text x="110" y="80" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="monospace">NET PROFIT MARGIN</text>
+      <text x="110" y="100" fill="#38BDF8" font-size="13" font-weight="bold" text-anchor="middle" font-family="monospace">18.5%</text>
+      <text x="200" y="90" fill="#64748B" font-size="16" font-family="monospace">×</text>
+      <rect x="220" y="55" width="140" height="60" rx="8" fill="#111622" stroke="#F59E0B" stroke-width="1.5"/>
+      <text x="290" y="80" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="monospace">ASSET TURNOVER</text>
+      <text x="290" y="100" fill="#F59E0B" font-size="13" font-weight="bold" text-anchor="middle" font-family="monospace">1.15x</text>
+      <text x="380" y="90" fill="#64748B" font-size="16" font-family="monospace">=</text>
+      <rect x="400" y="45" width="160" height="80" rx="8" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-width="2"/>
+      <text x="480" y="75" fill="#10B981" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">RETURN ON EQUITY (ROE)</text>
+      <text x="480" y="105" fill="#FFFFFF" font-size="20" font-weight="extrabold" text-anchor="middle" font-family="monospace">21.2%</text>
+    </svg>`
+  },
+  "2_2": {
+    code: "MODUL 3.3",
+    category: "DETEKSI FRAUD & SAHAM GORENGAN",
+    title: "Menghindari Saham Gorengan dengan Arus Kas Operasional",
+    goldenRule: "Laba bersih akuntansi bisa direkayasa dengan piutang fiktif, tetapi Arus Kas Bersih Operasi (CFO) tidak bisa berbohong.",
+    explanation: "Banyak saham third-liner yang mencatat kenaikan laba ratusan persen namun sahamnya tiba-tiba anjlok dan digembok bursa. Modus paling umum adalah mencatat penjualan agresif secara kredit (piutang usaha membengkak) tanpa ada uang tunai yang masuk. Jika Laba Bersih positif namun CFO terus-menerus minus, itu adalah sinyal bahaya (red flag).",
+    checklist: [
+      "Bandingkan Net Income dengan Cash Flow from Operating Activities (CFO).",
+      "Waspadai rasio Piutang Usaha terhadap Pendapatan yang melonjak drastis.",
+      "Periksa apakah ada transaksi afiliasi janggal dengan entitas pengendali.",
+      "Tolak membeli saham dengan auditor yang sering berganti tiap tahun."
+    ],
+    recommendedSetup: {
+      ticker: "ANTM",
+      side: "BUY",
+      entry: 1565,
+      sl: 1510,
+      tp1: 1650,
+      riskPct: 2.0,
+      note: "ANTM: Arus Kas Operasi Kuat Didukung Ekspor Komoditas"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <line x1="80" y1="90" x2="520" y2="90" stroke="#334155" stroke-width="1.5"/>
+      <text x="60" y="94" fill="#64748B" font-size="10" font-family="monospace">0</text>
+      <polyline points="100,110 200,95 300,70 400,45 500,30" fill="none" stroke="#F59E0B" stroke-width="2.5"/>
+      <text x="505" y="32" fill="#F59E0B" font-size="9" font-family="monospace">Laba Bersih Naik (Palsu)</text>
+      <polyline points="100,85 200,100 300,120 400,140 500,155" fill="none" stroke="#F43F5E" stroke-width="2.5"/>
+      <text x="505" y="158" fill="#F43F5E" font-size="9" font-family="monospace">Arus Kas (CFO) Defisit!</text>
+      <rect x="220" y="80" width="160" height="45" rx="6" fill="#F43F5E" fill-opacity="0.2" stroke="#F43F5E" stroke-width="1.5"/>
+      <text x="300" y="100" fill="#F43F5E" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">DIVERGENSI ANCAMAN</text>
+      <text x="300" y="115" fill="#FFF" font-size="8" text-anchor="middle" font-family="monospace">Red Flag: Manipulasi Piutang</text>
+    </svg>`
+  },
+  "3_0": {
+    code: "MODUL 4.1",
+    category: "BANDARMOLOGI BEI POST-MARKET",
+    title: "Aturan Post-Market BEI: Membaca Net Buyer & Net Seller",
+    goldenRule: "Sejak Desember 2021, BEI menutup kode broker saat jam bursa (blind tape). Kode broker hanya dibuka saat sesi Post-Market 16:00 WIB. Disinilah rahasia akumulasi terkuak.",
+    explanation: "Karena selama sesi trading kode broker disamarkan, trader retail yang FOMO sering terkecoh oleh bid tebal palsu (fake bid). Namun saat jam 16:00 WIB, bursa merilis data agregat: siapa broker yang benar-benar memborong barang dan siapa yang melakukan distribusi. Trademind otomatis membedah data ini untuk mendeteksi keselarasan bandar.",
+    checklist: [
+      "Buka tab Broker Summary pada Trademind tepat setelah jam 16:00 WIB.",
+      "Identifikasi 3 broker teratas (Top Buyer) dan nilai net buy-nya.",
+      "Bedakan tipe broker: Asing/Institusi (AK, BK, CC, ZP) vs Retail (YP, PD, XC).",
+      "Kondisi ideal: Broker Institusi memborong sementara broker retail panik menjual."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "BBRI: AK & BK Akumulasi Rp 84.2 Miliar dari Retail YP"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <line x1="60" y1="85" x2="540" y2="85" stroke="#334155" stroke-width="2"/>
+      <circle cx="120" cy="85" r="8" fill="#F43F5E"/>
+      <text x="120" y="65" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="monospace">09:00 - 15:50 WIB</text>
+      <text x="120" y="110" fill="#F43F5E" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">BLIND TAPE</text>
+      <text x="120" y="125" fill="#64748B" font-size="8" text-anchor="middle" font-family="monospace">Kode Broker Ditutup</text>
+      <circle cx="300" cy="85" r="8" fill="#F59E0B"/>
+      <text x="300" y="65" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="monospace">16:00 WIB</text>
+      <text x="300" y="110" fill="#F59E0B" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">CLOSING CROSS</text>
+      <text x="300" y="125" fill="#64748B" font-size="8" text-anchor="middle" font-family="monospace">Matching Terakhir</text>
+      <circle cx="480" cy="85" r="10" fill="#10B981"/>
+      <text x="480" y="60" fill="#10B981" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">16:15 WIB</text>
+      <text x="480" y="110" fill="#10B981" font-size="10" font-weight="extrabold" text-anchor="middle" font-family="monospace">BROKER SUMMARY</text>
+      <text x="480" y="125" fill="#38BDF8" font-size="8" text-anchor="middle" font-family="monospace">Trademind AI Inflow Parsing</text>
+    </svg>`
+  },
+  "3_1": {
+    code: "MODUL 4.2",
+    category: "BANDARMOLOGI MATRIX & VWAP",
+    title: "Menghitung Konsentrasi Top 3 Broker (BCR3) & Modal VWAP",
+    goldenRule: "Bandar tidak bisa membohongi nilai uang yang telah mereka keluarkan. Garis Average Price (VWAP) dari Top 3 Buyer adalah benteng support terkuat.",
+    explanation: "Formula BCR3 (Broker Concentration Ratio 3) mengukur monopoli barang: BCR3 = (Volume Beli Top 3 Broker) / (Total Volume Pasar). Jika nilainya di atas 50%, saham tersebut sedang dikendalikan ketat oleh bandar (Akumulasi Masif). Level harga rata-rata mereka (VWAP) menjadi harga modal bandar—selama harga berada di dekat VWAP bandar, risiko Anda sangat kecil.",
+    checklist: [
+      "Hitung persentase konsentrasi BCR3 (wajib > 50% untuk kategori akumulasi).",
+      "Catat harga VWAP Top 3 Buyer (e.g. BBRI di 3.820).",
+      "Bandingkan harga pasar saat ini dengan modal bandar: Jangan beli jika harga sudah terbang >10% di atas VWAP bandar.",
+      "Gunakan VWAP bandar sebagai jangkar konfirmasi pembalikan arah."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "BBRI: BCR3 54.2% (Akumulasi Masif) dengan Modal VWAP 3.820"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="60" y="40" width="300" height="22" rx="4" fill="#10B981"/>
+      <text x="70" y="55" fill="#000" font-size="10" font-weight="bold" font-family="monospace">AK (UBS) + BK (JPMorgan) + CC: 54.2% Konsentrasi</text>
+      <rect x="60" y="70" width="160" height="22" rx="4" fill="#334155"/>
+      <text x="70" y="85" fill="#FFF" font-size="9" font-family="monospace">Broker Lainnya: 45.8%</text>
+      <line x1="60" y1="125" x2="540" y2="125" stroke="#F59E0B" stroke-width="2"/>
+      <circle cx="420" cy="125" r="5" fill="#F59E0B"/>
+      <text x="430" y="120" fill="#F59E0B" font-size="10" font-weight="bold" font-family="monospace">VWAP Modal Bandar: Rp 3.820</text>
+      <text x="430" y="140" fill="#94A3B8" font-size="9" font-family="monospace">Harga Pasar Saat Ini: Rp 3.840 (Safe Entry)</text>
+    </svg>`
+  },
+  "3_2": {
+    code: "MODUL 4.3",
+    category: "SIKLUS WYCKOFF & BANDARMOLOGI",
+    title: "Deteksi Akumulasi Diam-diam vs Distribusi Agresif",
+    goldenRule: "Beli saat bandar melakukan akumulasi diam-diam (Volume spike saat harga sideways), dan SEGERA keluar saat bandar melakukan distribusi di pucuk.",
+    explanation: "Bandar mengumpulkan barang ketika publik sedang bosan atau pesimis (Fase Akumulasi Wyckoff). Mereka menjaga agar harga tidak naik terlalu cepat dengan memakan penawaran secara bertahap. Ketika barang sudah terkumpul 80%, mereka menyebarkan berita bagus (good news) dan mendorong harga terbang tinggi (Markup) untuk mendistribusikan barang ke retail yang terkena FOMO.",
+    checklist: [
+      "Perhatikan kondisi sideways panjang dengan penurunan volatilitas (volatility compression).",
+      "Cari candle 'Spring' / Shakeout yang menjebol support sesaat lalu ditarik cepat.",
+      "Pastikan Top Buyer didominasi broker institusi asing.",
+      "Jika harga membuat All-Time High namun Top Seller adalah broker asing, waspadai distribusi."
+    ],
+    recommendedSetup: {
+      ticker: "BBRI",
+      side: "BUY",
+      entry: 3840,
+      sl: 3710,
+      tp1: 4150,
+      riskPct: 2.0,
+      note: "BBRI: Selesai Fase Spring Wyckoff & Memulai Tahap Markup"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <polyline points="40,40 100,120 160,85 220,115 260,140 320,80 400,60 540,25" fill="none" stroke="#10B981" stroke-width="2.5"/>
+      <rect x="90" y="65" width="180" height="80" fill="#38BDF8" fill-opacity="0.08" stroke="#38BDF8" stroke-dasharray="2 2"/>
+      <text x="180" y="80" fill="#38BDF8" font-size="9" text-anchor="middle" font-family="monospace">FASE AKUMULASI (Quiet)</text>
+      <circle cx="260" cy="140" r="4" fill="#F43F5E"/>
+      <text x="260" y="155" fill="#F43F5E" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Spring / Shakeout</text>
+      <text x="470" y="45" fill="#10B981" font-size="10" font-weight="extrabold" text-anchor="middle" font-family="monospace">FASE MARKUP ▲</text>
+      <text x="470" y="60" fill="#94A3B8" font-size="8" text-anchor="middle" font-family="monospace">Ekspansi Harga Institusi</text>
+    </svg>`
+  },
+  "3_3": {
+    code: "MODUL 4.4",
+    category: "SMART MONEY CONCEPTS (SMC) & FOREX/GOLD",
+    title: "SMC Forex: Liquidity Sweeps, Order Blocks & Imbalance",
+    goldenRule: "Pasar keuangan global bergerak dari likuiditas ke likuiditas. Tunggu 'Judas Swing' menyapu High/Low sesi Asia sebelum mencari konfirmasi masuk di Order Block.",
+    explanation: "Algoritma perbankan tier-1 (JPMorgan, Citibank) butuh miliaran dollar likuiditas untuk mengeksekusi posisi mereka. Likuiditas tersebut tersimpan tepat di atas resistance dan di bawah support retail (Stop Loss hunting pool). Setelah menyapu level tersebut (Liquidity Sweep) dan terjadi Market Structure Shift (MSS), harga akan kembali memitigasi Order Block institusi sebelum ekspansi besar.",
+    checklist: [
+      "Tandai High dan Low dari Sesi Asia (07:00 - 13:00 WIB).",
+      "Tunggu candle wick menembus batas sesi Asia di pembukaan London/New York.",
+      "Cari Market Structure Shift (MSS) pada timeframe 5 menit.",
+      "Pasang limit order di Fair Value Gap (FVG) atau Order Block (OB) yang belum termitigasi."
+    ],
+    recommendedSetup: {
+      ticker: "XAUUSD",
+      side: "BUY",
+      entry: 2648.5,
+      sl: 2638.0,
+      tp1: 2668.0,
+      riskPct: 2.0,
+      note: "XAU/USD: Asian Low Swept di $2,638, Menuju Buy-Side Liquidity $2,668"
+    },
+    diagramSvg: `<svg viewBox="0 0 600 170" class="w-full h-auto max-h-48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="170" fill="#080B11" rx="8"/>
+      <rect x="60" y="55" width="160" height="60" fill="#F59E0B" fill-opacity="0.1" stroke="#F59E0B" stroke-dasharray="3 3"/>
+      <text x="140" y="70" fill="#F59E0B" font-size="9" text-anchor="middle" font-family="monospace">ASIAN SESSION RANGE</text>
+      <line x1="60" y1="115" x2="280" y2="115" stroke="#F43F5E" stroke-width="1.5" stroke-dasharray="2 2"/>
+      <text x="140" y="130" fill="#F43F5E" font-size="8" text-anchor="middle" font-family="monospace">Sell-Side Liquidity (SSL)</text>
+      <path d="M 200,80 L 250,140 L 290,45 L 360,70 L 520,25" fill="none" stroke="#10B981" stroke-width="2.5"/>
+      <circle cx="250" cy="140" r="4" fill="#F43F5E"/>
+      <text x="250" y="155" fill="#F43F5E" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">LIQUIDITY SWEEP</text>
+      <rect x="330" y="65" width="50" height="25" fill="#38BDF8" fill-opacity="0.25" stroke="#38BDF8"/>
+      <text x="355" y="60" fill="#38BDF8" font-size="8" text-anchor="middle" font-family="monospace">Bullish OB</text>
+      <text x="520" y="18" fill="#10B981" font-size="10" font-weight="extrabold" text-anchor="middle" font-family="monospace">EXPANSION ▲</text>
+    </svg>`
+  }
+};
+
+function openLessonDetail(modId, lessonIdx) {
+  currentActiveLessonKey = `${modId}_${lessonIdx}`;
+  const lesson = LESSON_DATA[currentActiveLessonKey] || LESSON_DATA["0_0"];
+  const modData = ACADEMY_MODULES[modId];
+  const lessonItem = modData ? modData.lessons[lessonIdx] : null;
+
+  const codeEl = document.getElementById("lessonModalCode");
+  const catEl = document.getElementById("lessonModalCategory");
+  const titleEl = document.getElementById("lessonModalTitle");
+  const ruleEl = document.getElementById("lessonGoldenRule");
+  const expEl = document.getElementById("lessonExplanation");
+  const diagContainer = document.getElementById("lessonDiagramContainer");
+  const checkContainer = document.getElementById("lessonChecklist");
+
+  if (codeEl) codeEl.innerText = lesson.code;
+  if (catEl) catEl.innerText = lesson.category;
+  if (titleEl) titleEl.innerText = lesson.title;
+  if (ruleEl) ruleEl.innerText = lesson.goldenRule;
+  if (expEl) expEl.innerText = lesson.explanation;
+
+  if (diagContainer) diagContainer.innerHTML = lesson.diagramSvg;
+
+  if (checkContainer) {
+    checkContainer.innerHTML = lesson.checklist.map(item => `
+      <li class="flex items-start space-x-2">
+        <span class="text-tradeGreen font-bold mt-0.5">•</span>
+        <span class="text-slate-300 leading-relaxed">${item}</span>
+      </li>
+    `).join("");
+  }
+
+  const isDone = lessonItem ? lessonItem.done : false;
+  const btnToggle = document.getElementById("btnToggleCompleteText");
+  if (btnToggle) {
+    btnToggle.innerText = isDone ? "Tandai Belum Selesai" : "Tandai Selesai";
+  }
+
+  const modal = document.getElementById("lessonDetailModal");
+  if (modal) modal.classList.remove("hidden");
+
+  lucide.createIcons();
+}
+
+function closeLessonModal() {
+  const modal = document.getElementById("lessonDetailModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function toggleCurrentLessonDone() {
+  const parts = currentActiveLessonKey.split("_");
+  const modId = parseInt(parts[0]);
+  const lessonIdx = parseInt(parts[1]);
+
+  if (ACADEMY_MODULES[modId] && ACADEMY_MODULES[modId].lessons[lessonIdx]) {
+    const l = ACADEMY_MODULES[modId].lessons[lessonIdx];
+    l.done = !l.done;
+
+    const total = ACADEMY_MODULES[modId].lessons.length;
+    const doneCount = ACADEMY_MODULES[modId].lessons.filter(item => item.done).length;
+    ACADEMY_MODULES[modId].progress = Math.round((doneCount / total) * 100);
+
+    renderFullAcademy();
+
+    const btnToggle = document.getElementById("btnToggleCompleteText");
+    if (btnToggle) {
+      btnToggle.innerText = l.done ? "Tandai Belum Selesai" : "Tandai Selesai";
+    }
+
+    showToast(l.done ? `Pelajaran ${l.num} ditandai selesai! Progres modul diupdate.` : `Status pelajaran ${l.num} direset.`);
+  }
+}
+
+function practiceCurrentLessonInDemo() {
+  const lesson = LESSON_DATA[currentActiveLessonKey] || LESSON_DATA["0_0"];
+  const setup = lesson.recommendedSetup;
+
+  closeLessonModal();
+  switchView("terminal");
+
+  if (INSTRUMENTS[setup.ticker]) {
+    onSelectInstrument(setup.ticker);
+    const select = document.getElementById("mainTickerSelect");
+    if (select) select.value = setup.ticker;
+  }
+
+  const entryInput = document.getElementById("ticketEntry");
+  const slInput = document.getElementById("ticketSL");
+  const tpInput = document.getElementById("ticketTP");
+  const riskSlider = document.getElementById("orderRiskRange");
+
+  if (entryInput) entryInput.value = setup.entry;
+  if (slInput) slInput.value = setup.sl;
+  if (tpInput) tpInput.value = setup.tp1;
+  if (riskSlider) riskSlider.value = setup.riskPct;
+
+  setOrderSide(setup.side);
+  recalcOrderTicket();
+
+  if (window.innerWidth < 1024) {
+    openRightPanel('order');
+  }
+
+  const orderTicketBox = document.getElementById("rightContentOrder");
+  if (orderTicketBox) {
+    orderTicketBox.classList.add("ring-2", "ring-tradeGreen", "rounded-xl");
+    setTimeout(() => {
+      orderTicketBox.classList.remove("ring-2", "ring-tradeGreen", "rounded-xl");
+    }, 2500);
+  }
+
+  showToast(`Mode Cek Ombak Aktif: Setup ${setup.ticker} siap diuji di Akun Demo!`);
+}
+
+function resetDemoBalance() {
+  userEquity = 25000000;
+  updateEquityDisplay();
+  showToast("Saldo Akun Demo berhasil di-reset ke Rp 25.000.000!");
+}
+
+function updateEquityDisplay() {
+  const el = document.getElementById("userEquityDisplay");
+  if (el) {
+    el.innerText = `Rp ${userEquity.toLocaleString("id-ID")}`;
+  }
+  const slider = document.getElementById("orderRiskRange");
+  if (slider) onRiskSliderChange(slider.value);
 }
 
 function showToast(msg) {

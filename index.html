@@ -143,10 +143,16 @@
         <span>LATENCY: <strong class="text-tradeGreen">14ms</strong></span>
       </div>
 
-      <!-- SIMULATED TRADER BALANCE -->
-      <div class="bg-[#111622] border border-white/15 px-2.5 py-1 rounded flex items-center space-x-2">
-        <span class="text-muted text-[10px] uppercase">EQUITY:</span>
-        <span id="userEquityDisplay" class="font-bold text-white">Rp 25.000.000</span>
+      <!-- SIMULATED DEMO TRADER BALANCE -->
+      <div class="flex items-center space-x-1.5">
+        <div class="bg-[#111622] border border-white/15 px-2.5 py-1 rounded flex items-center space-x-2">
+          <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">DEMO</span>
+          <span class="text-muted text-[10px] uppercase">SALDO:</span>
+          <span id="userEquityDisplay" class="font-bold text-white">Rp 25.000.000</span>
+        </div>
+        <button onclick="resetDemoBalance()" title="Reset Modal Demo (Rp 25.000.000)" class="p-1.5 rounded bg-white/5 hover:bg-white/10 text-muted hover:text-white transition border border-white/10 cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        </button>
       </div>
 
       <!-- MARKET STATUS BADGE -->
@@ -212,6 +218,13 @@
               <div>SL: <strong id="chartSlVal" class="text-tradeRed">3.710</strong></div>
               <div>TP: <strong id="chartTpVal" class="text-tradeGreen">4.150</strong></div>
             </div>
+          </div>
+
+          <!-- CHART DEMO SIMULATION BADGE -->
+          <div class="hidden md:flex absolute top-3 right-3 bg-[#0D111A]/90 border border-amber-500/30 rounded-lg px-2.5 py-1.5 backdrop-blur font-mono text-[10px] z-10 shadow-lg items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+            <span class="text-amber-300 font-bold">AKUN DEMO REAL-TIME</span>
+            <span class="text-muted border-l border-white/10 pl-2">Cek Ombak Simulasi</span>
           </div>
 
           <!-- MOBILE FLOATING ACTION: OPEN ORDER & COPILOT -->
@@ -546,6 +559,90 @@
         <button onclick="closeCmsModal()" class="px-3 py-1.5 rounded bg-white/5 text-muted text-xs">Batal</button>
         <button onclick="saveCmsLesson()" class="px-3 py-1.5 rounded bg-white text-black font-bold text-xs">Simpan ke Vector DB</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LESSON DETAIL & TRADING INFOGRAPHIC -->
+  <div id="lessonDetailModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden font-mono overflow-y-auto">
+    <div class="bg-[#0C0F17] border border-white/15 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] flex flex-col">
+      
+      <!-- MODAL HEADER -->
+      <div class="flex items-start justify-between border-b border-panelBorder pb-3 flex-shrink-0">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="lessonModalCode" class="px-2 py-0.5 rounded text-[10px] font-bold bg-tradeGreen/10 text-tradeGreen border border-tradeGreen/30">
+              MODUL 1.1
+            </span>
+            <span id="lessonModalCategory" class="text-muted text-[10px] uppercase">RISK MANAGEMENT</span>
+          </div>
+          <h2 id="lessonModalTitle" class="text-base sm:text-lg font-bold text-white mt-1">The Golden Rule: Batas Risiko 1-2% Per Transaksi</h2>
+        </div>
+        <button onclick="closeLessonModal()" class="p-1 rounded bg-white/5 hover:bg-white/10 text-muted hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- MODAL SCROLLABLE BODY -->
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        
+        <!-- TRADING DIAGRAM / INFOGRAPHIC CONTAINER -->
+        <div id="lessonDiagramContainer" class="p-4 rounded-xl bg-[#080B11] border border-white/10 flex flex-col items-center justify-center min-h-[220px]">
+          <!-- Dynamic SVG injected via JS -->
+        </div>
+
+        <!-- KEY TAKEAWAY GOLDEN RULE BOX -->
+        <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+          <div class="flex items-center space-x-1.5 font-bold text-amber-300">
+            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+            <span>GOLDEN RULE & PRINSIP KUNCI:</span>
+          </div>
+          <p id="lessonGoldenRule" class="text-[11px] text-amber-100/90 leading-relaxed">
+            Tidak ada satu pun trade yang boleh mempertaruhkan lebih dari 2% total ekuitas portofolio. Jika modal Anda Rp 25 Juta, kerugian maksimal per posisi wajib terhenti di Rp 500.000.
+          </p>
+        </div>
+
+        <!-- DEEP INSTITUTIONAL LESSON EXPLANATION -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+            <i data-lucide="book-open" class="w-3.5 h-3.5 text-tradeGreen"></i>
+            <span>Penjelasan Institusional & Mengapa Retail Bangkrut</span>
+          </h4>
+          <p id="lessonExplanation" class="text-[11px] text-slate-300 leading-relaxed">
+            Mayoritas trader pemula menganggap manajemen risiko adalah hal membosankan dan langsung memborong saham sampai margin habis. Ketika harga turun 10%, mereka terkena 'disposition effect'—menolak cut-loss hingga modal tergerus 50%. Trademind memaksakan batas risiko terukur secara otomatis pada Order Ticket.
+          </p>
+        </div>
+
+        <!-- PRACTICAL SOP CHECKLIST -->
+        <div class="space-y-1.5">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+            <i data-lucide="check-square" class="w-3.5 h-3.5 text-tradeGreen"></i>
+            <span>SOP Eksekusi Mandiri:</span>
+          </h4>
+          <ul id="lessonChecklist" class="space-y-1 text-[11px] text-muted">
+            <!-- Dynamic checklist items -->
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- MODAL FOOTER ACTIONS -->
+      <div class="pt-3 border-t border-panelBorder flex flex-col sm:flex-row items-center justify-between gap-2.5 flex-shrink-0">
+        <button id="btnToggleComplete" onclick="toggleCurrentLessonDone()" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 transition flex items-center justify-center space-x-2 cursor-pointer">
+          <i data-lucide="check" class="w-3.5 h-3.5 text-tradeGreen"></i>
+          <span id="btnToggleCompleteText">Tandai Selesai</span>
+        </button>
+
+        <div class="w-full sm:w-auto flex items-center space-x-2">
+          <button onclick="closeLessonModal()" class="w-1/2 sm:w-auto px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white text-xs transition cursor-pointer">
+            Tutup
+          </button>
+          <button id="btnPracticeDemo" onclick="practiceCurrentLessonInDemo()" class="w-1/2 sm:w-auto px-4 py-2 rounded-lg bg-tradeGreen hover:opacity-90 text-black font-extrabold text-xs transition flex items-center justify-center space-x-1.5 shadow-lg cursor-pointer">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-black"></i>
+            <span>Cek Ombak di Akun Demo &rarr;</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
